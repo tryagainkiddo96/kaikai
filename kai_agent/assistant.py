@@ -180,6 +180,11 @@ class KaiAssistant:
     def _maybe_run_tools(self, user_input: str) -> str:
         lowered = user_input.lower()
         github_url = re.search(r"https?://github\.com/[^\s)]+", user_input, flags=re.IGNORECASE)
+        cyber_toolkit_match = re.search(
+            r"^(?:cyber toolkit|lab toolkit|safe cyber tools|authorized cyber tools|show cyber tools)$",
+            user_input.strip(),
+            flags=re.IGNORECASE,
+        )
         preview_match = re.search(r"^(?:preview command|classify command|is this safe)[: ]+([\s\S]+)$", user_input.strip(), flags=re.IGNORECASE)
         web_match = re.search(
             r"^(?:web|research|search the web|look this up|look it up|browse)[: ]+([\s\S]+)$",
@@ -220,6 +225,11 @@ class KaiAssistant:
             for token in ["kali", "linux", "terminal", "apt", "dpkg", "bash", "wsl", "ffuf", "nmap", "burp", "sqlmap"]
         )
 
+        if cyber_toolkit_match:
+            try:
+                return "Cyber toolkit:\n" + self.tools.read_file(str(self.workspace / "CYBER_LAB_TOOLKIT.md"), max_chars=12000)
+            except Exception as exc:
+                return f"Cyber toolkit lookup failed: {exc}"
         if preview_match:
             try:
                 shell = "bash" if any(token in lowered for token in ["kali", "bash", "linux"]) else "powershell"

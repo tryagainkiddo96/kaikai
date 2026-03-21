@@ -52,6 +52,13 @@ Unified local launcher:
 powershell -ExecutionPolicy Bypass -File tools/launch_kai_stack.ps1
 ```
 
+Checkpoint and restore:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/checkpoint_kai.ps1 -Name before-upgrade
+powershell -ExecutionPolicy Bypass -File tools/restore_kai_checkpoint.ps1 -Branch codex/before-upgrade
+```
+
 Futuristic chat widget:
 
 ```powershell
@@ -113,6 +120,11 @@ Live web research:
   - `web: latest install method for n8n on Windows`
   - `research: current package name for ffuf on Kali`
   - `look it up: how Tavily search depth works`
+
+Authorized cyber lab helper:
+
+- ask `show cyber tools` to load Kai's local authorized-lab toolkit notes
+- current reference file: `CYBER_LAB_TOOLKIT.md`
 
 Notes:
 
