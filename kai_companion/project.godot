@@ -1,0 +1,35 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
+[application]
+
+config/name="Kai Companion"
+run/main_scene="res://scenes/kai.tscn"
+run/max_fps=30
+config/features=PackedStringArray("4.6")
+
+[display]
+
+window/size/viewport_width=340
+window/size/viewport_height=420
+window/size/mode=0
+window/size/borderless=true
+window/size/always_on_top=true
+window/vsync/vsync_mode=1
+window/per_pixel_transparency/allowed=true
+
+[rendering]
+
+environment/defaults/default_clear_color=Color(0, 0, 0, 0)
+viewport/transparent_background=true

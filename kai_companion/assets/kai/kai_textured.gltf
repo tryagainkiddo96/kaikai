@@ -1,0 +1,157 @@
+{
+  "accessors": [
+    {
+      "bufferView": 0,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "normalized": false,
+      "count": 519942,
+      "type": "VEC3",
+      "max": [
+        0.8444430232048035,
+        0.7269896864891052,
+        1.0
+      ],
+      "min": [
+        -0.8444430232048035,
+        -0.7269896864891052,
+        -1.0
+      ]
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "normalized": false,
+      "count": 519942,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "normalized": false,
+      "count": 519942,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 0,
+      "componentType": 5125,
+      "normalized": false,
+      "count": 2998761,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "generator": "Khronos glTF Blender I/O v4.2.70",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 6239304,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 6239304,
+      "byteLength": 6239304,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 12478608,
+      "byteLength": 4159536,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 16638144,
+      "byteLength": 11995044,
+      "target": 34963
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "kai_textured.bin",
+      "byteLength": 28633188
+    }
+  ],
+  "images": [
+    {
+      "uri": "kai_albedo.png"
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 1.0,
+        "baseColorTexture": {
+          "index": 0,
+          "texCoord": 0
+        }
+      },
+      "emissiveFactor": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "alphaMode": "OPAQUE",
+      "doubleSided": false,
+      "name": "KaiMaterial"
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "mode": 4,
+          "material": 0
+        }
+      ],
+      "name": "Mesh_0"
+    }
+  ],
+  "nodes": [
+    {
+      "mesh": 0,
+      "name": "Mesh_0"
+    }
+  ],
+  "samplers": [
+    {
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    }
+  ]
+}

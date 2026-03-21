@@ -1,0 +1,91 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/kai.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/kai/kai_photo_clean.png" id="2_idle"]
+[ext_resource type="Texture2D" path="res://assets/kai/kai_alert_pose.png" id="3_alert"]
+[ext_resource type="Texture2D" path="res://assets/kai/kai_bark_pose.png" id="4_bark"]
+[ext_resource type="Texture2D" path="res://assets/kai/kai_lie_down_clean.png" id="5_rest"]
+
+[node name="Kai" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_script")
+
+[node name="AvatarShadow" type="TextureRect" parent="."]
+offset_left = 58.0
+offset_top = 314.0
+offset_right = 292.0
+offset_bottom = 396.0
+modulate = Color(0, 0, 0, 0.14)
+texture = ExtResource("5_rest")
+expand_mode = 1
+stretch_mode = 5
+flip_v = true
+mouse_filter = 2
+
+[node name="Avatar" type="TextureRect" parent="."]
+offset_left = 28.0
+offset_top = 66.0
+offset_right = 312.0
+offset_bottom = 394.0
+texture = ExtResource("2_idle")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Bubble" type="PanelContainer" parent="."]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 252.0
+offset_bottom = 92.0
+mouse_filter = 2
+
+[node name="BubbleLabel" type="Label" parent="Bubble"]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Kai booting up..."
+autowrap_mode = 3
+
+[node name="ChatPanel" type="PanelContainer" parent="."]
+visible = false
+offset_left = 12.0
+offset_top = 270.0
+offset_right = 328.0
+offset_bottom = 408.0
+
+[node name="Margin" type="MarginContainer" parent="ChatPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="ChatPanel/Margin"]
+layout_mode = 2
+
+[node name="ChatLog" type="RichTextLabel" parent="ChatPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+bbcode_enabled = true
+
+[node name="InputRow" type="HBoxContainer" parent="ChatPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="ChatInput" type="LineEdit" parent="ChatPanel/Margin/VBox/InputRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Chat with Kai..."
+
+[node name="SendButton" type="Button" parent="ChatPanel/Margin/VBox/InputRow"]
+layout_mode = 2
+text = "Send"
+
+[node name="HTTPRequest" type="HTTPRequest" parent="."]
+
+[node name="BarkPlayer" type="AudioStreamPlayer" parent="."]
