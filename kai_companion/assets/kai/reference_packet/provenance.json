@@ -1,0 +1,53 @@
+{
+  "status": "canonical_appearance_locked",
+  "notes": [
+    "The current runtime avatar is not yet a fully Kai-derived asset.",
+    "This manifest is the provenance anchor for the replacement canonical pipeline."
+  ],
+  "reference_sources": {
+    "photos": [
+      "res://assets/kai/reference/kai_standing.jpg",
+      "res://assets/kai/reference/kai_two_dogs_left.jpg",
+      "res://assets/kai/reference/kai_lounging_1.jpg",
+      "res://assets/kai/reference/kai_lounging_2.jpg"
+    ],
+    "video_frames": [
+      "res://assets/kai/reference/video_frames/model_ref_01.jpg",
+      "res://assets/kai/reference/video_frames/model_ref_02.jpg",
+      "res://assets/kai/reference/video_frames/model_ref_03.jpg",
+      "res://assets/kai/reference/video_frames/model_ref_04.jpg",
+      "res://assets/kai/reference/video_frames/model_ref_05.jpg",
+      "res://assets/kai/reference/video_frames/model_ref_06.jpg",
+      "res://assets/kai/reference/video_frames/model_ref_07.jpg"
+    ]
+  },
+  "current_placeholder_lineage": {
+    "external_base_mesh": "res://assets/kai/modelToUsed.glb",
+    "canonical_photo_replica": "res://assets/kai/kai_textured.glb",
+    "motion_reference_donor": "res://assets/kai/kai-lite.glb"
+  },
+  "runtime_rule": {
+    "active_identity_asset": "res://assets/kai/kai_textured.glb",
+    "provisional_rig_candidate": "res://assets/kai/kai_textured_rigged.glb",
+    "disallowed_identity_assets": [
+      "res://assets/kai/kai-lite.glb",
+      "res://assets/kai/modelToUsed.glb",
+      "res://assets/kai/kai_runtime_candidate.glb",
+      "res://assets/kai/kai_animated.glb",
+      "res://assets/kai/kai.glb"
+    ],
+    "notes": [
+      "Load only the canonical photo replica in the companion runtime until a validated rigged photo replica exists.",
+      "The low-poly donor remains a motion reference, not a visible runtime swap.",
+      "The provisional rigged candidate may be loaded explicitly for validation, but it is not yet the default live identity."
+    ]
+  },
+  "target_outputs": {
+    "hq_asset": "res://assets/kai/kai_hq.glb",
+    "mixamo_upload_staging": "res://assets/kai/kai_mixamo_ready.fbx",
+    "mixamo_rig_source": "res://assets/kai/kai_mixamo_rigged_source.fbx",
+    "experimental_bootstrap_rig_source": "res://assets/kai/kai_donor_bootstrap_rig_source.fbx",
+    "rigged_photo_replica": "res://assets/kai/kai_textured_rigged.glb",
+    "master_scene": "res://assets/kai/kai_hq_master.blend"
+  }
+}
