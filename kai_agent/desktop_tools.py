@@ -11,6 +11,7 @@ import uuid
 from queue import Empty, Queue
 from pathlib import Path
 
+from kai_agent.browser_tools import BrowserTools
 from kai_agent.tavily_client import TavilyClient
 
 
@@ -28,6 +29,7 @@ class DesktopTools:
         self.kali_lock = threading.Lock()
         self.kali_session_cwd = self._to_wsl_path(self.workspace)
         self.tavily = TavilyClient()
+        self.browser = BrowserTools(workspace)
 
     def classify_command(self, command: str, shell: str = "powershell") -> dict:
         lowered = command.strip().lower()
@@ -811,6 +813,43 @@ class DesktopTools:
                 if len(entries) >= limit:
                     return "\n".join(entries)
         return "\n".join(entries)
+
+    # Browser automation methods
+    def browse(self, url: str) -> str:
+        """Navigate to a URL."""
+        return self.browser.browse(url)
+
+    def search_browser(self, query: str, site: str = "") -> str:
+        """Search the web using browser automation."""
+        return self.browser.search_web_browser(query, site)
+
+    def get_page_content(self) -> str:
+        """Get text content of the current page."""
+        return self.browser.get_page_content()
+
+    def get_page_links(self) -> str:
+        """Get links on the current page."""
+        return self.browser.get_links()
+
+    def click_link(self, text: str) -> str:
+        """Click a link by text."""
+        return self.browser.click_link(text)
+
+    def fill_form(self, data: dict, form_index: int = 0) -> str:
+        """Fill a form on the current page."""
+        return self.browser.fill_form(data, form_index)
+
+    def find_forms(self) -> str:
+        """Find forms on the current page."""
+        return self.browser.find_forms()
+
+    def download_file(self, url: str = None, filename: str = None) -> str:
+        """Download a file."""
+        return self.browser.download(url, filename)
+
+    def screenshot(self, filename: str = "kai_screenshot.png") -> str:
+        """Take a screenshot."""
+        return self.browser.screenshot(filename)
 
     def _ocr_image(self, image_path: Path, text_base: Path) -> str:
         if not TESSERACT_PATH.exists():

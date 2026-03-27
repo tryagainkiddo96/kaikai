@@ -838,6 +838,67 @@ class KaiAssistant:
                 return "Terminal snapshot:\n" + self.tools.run_shell("Get-Process | Select-Object -First 30 ProcessName,Id")
             except Exception as exc:
                 return f"Terminal snapshot failed: {exc}"
+
+        # Browser automation commands
+        browse_match = re.search(r"(?:browse|go to|open website|open site|navigate to)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+        if browse_match:
+            try:
+                return self._wrap_action_result("Browse", self.tools.browse(browse_match.group(1).strip()))
+            except Exception as exc:
+                return f"Browse failed: {exc}"
+        browser_search_match = re.search(r"(?:browser search|search site|search website|find on web)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+        if browser_search_match:
+            try:
+                return self._wrap_action_result("Browser search", self.tools.search_browser(browser_search_match.group(1).strip()))
+            except Exception as exc:
+                return f"Browser search failed: {exc}"
+        download_match = re.search(r"(?:download file|download from)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+        if download_match:
+            try:
+                return self._wrap_action_result("Download", self.tools.download_file(url=download_match.group(1).strip()))
+            except Exception as exc:
+                return f"Download failed: {exc}"
+        if any(phrase in lowered for phrase in ["show page", "page content", "what's on this page", "read page"]):
+            try:
+                return self._wrap_action_result("Page content", self.tools.get_page_content())
+            except Exception as exc:
+                return f"Page content failed: {exc}"
+        if any(phrase in lowered for phrase in ["show links", "page links", "get links"]):
+            try:
+                return self._wrap_action_result("Page links", self.tools.get_page_links())
+            except Exception as exc:
+                return f"Page links failed: {exc}"
+        click_link_match = re.search(r"(?:click link|click on)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+        if click_link_match:
+            try:
+                return self._wrap_action_result("Click link", self.tools.click_link(click_link_match.group(1).strip()))
+            except Exception as exc:
+                return f"Click link failed: {exc}"
+        if any(phrase in lowered for phrase in ["find forms", "show forms", "page forms"]):
+            try:
+                return self._wrap_action_result("Find forms", self.tools.find_forms())
+            except Exception as exc:
+                return f"Find forms failed: {exc}"
+        fill_form_match = re.search(r"(?:fill form|submit form|fill field)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+        if fill_form_match:
+            try:
+                raw = fill_form_match.group(1).strip()
+                data = {}
+                for pair in raw.split(","):
+                    if "=" in pair:
+                        k, v = pair.split("=", 1)
+                        data[k.strip()] = v.strip()
+                if data:
+                    return self._wrap_action_result("Fill form", self.tools.fill_form(data))
+                return "Fill form: no field=value pairs found. Use format: fill form: name=John, email=test@example.com"
+            except Exception as exc:
+                return f"Fill form failed: {exc}"
+        if any(phrase in lowered for phrase in ["take screenshot", "screenshot", "capture page"]):
+            try:
+                return self._wrap_action_result("Screenshot", self.tools.screenshot())
+            except Exception as exc:
+                return f"Screenshot failed: {exc}"
+
         kali_match = re.search(r"(?:run|execute)\s+(?:in\s+kali|on\s+kali|kali)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
         if kali_match:
             try:
