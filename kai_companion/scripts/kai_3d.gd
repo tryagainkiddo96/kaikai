@@ -70,11 +70,16 @@ const BARK_COOLDOWN_MAX := 11.5
 @onready var model_anchor: Node3D = $World/ModelAnchor
 @onready var bubble: PanelContainer = $UI/Root/Bubble
 @onready var bubble_label: Label = $UI/Root/Bubble/BubbleLabel
-@onready var panel_toggle_button: Button = $UI/Root/PanelToggleButton
-@onready var chat_panel: PanelContainer = $UI/Root/ChatPanel
-@onready var chat_log: RichTextLabel = $UI/Root/ChatPanel/Margin/VBox/ChatLog
-@onready var chat_input: LineEdit = $UI/Root/ChatPanel/Margin/VBox/InputRow/ChatInput
-@onready var send_button: Button = $UI/Root/ChatPanel/Margin/VBox/InputRow/SendButton
+@onready var mood_label: Label = $UI/Root/TopBar/MoodLabel
+@onready var status_label: Label = $UI/Root/TopBar/StatusLabel
+@onready var chat_toggle: Button = $UI/Root/ActionBar/ChatToggle
+@onready var pet_button: Button = $UI/Root/ActionBar/PetButton
+@onready var walk_button: Button = $UI/Root/ActionBar/WalkButton
+@onready var chat_overlay: PanelContainer = $UI/Root/ChatOverlay
+@onready var chat_log: RichTextLabel = $UI/Root/ChatOverlay/ChatVBox/ChatLog
+@onready var chat_input: LineEdit = $UI/Root/ChatOverlay/ChatVBox/InputRow/ChatInput
+@onready var voice_button: Button = $UI/Root/ChatOverlay/ChatVBox/InputRow/VoiceButton
+@onready var send_button: Button = $UI/Root/ChatOverlay/ChatVBox/InputRow/SendButton
 @onready var request: HTTPRequest = $UI/Root/HTTPRequest
 @onready var bark_player: AudioStreamPlayer = $BarkPlayer
 
@@ -217,11 +222,14 @@ func _ready() -> void:
     _load_3d_model()
     _load_companion_audio()
     _seed_history()
-    _set_chat_panel_visible(false)
+    _set_chat_overlay_visible(false)
     request.request_completed.connect(_on_request_completed)
-    panel_toggle_button.pressed.connect(_toggle_chat_panel)
+    chat_toggle.pressed.connect(_toggle_chat_overlay)
     send_button.pressed.connect(_send_chat_message)
     chat_input.text_submitted.connect(_on_input_submitted)
+    pet_button.pressed.connect(_on_pet_pressed)
+    walk_button.pressed.connect(_on_walk_pressed)
+    voice_button.pressed.connect(_on_voice_pressed)
     if request.has_method("set_timeout"):
         request.set_timeout(35)
     _home_anchor = Vector2(DisplayServer.window_get_position())
@@ -229,6 +237,7 @@ func _ready() -> void:
     _walk_pause = randf_range(3.0, 6.0)
     _rest_duration = randf_range(4.5, 7.5)
     _walk_target = Vector2(DisplayServer.window_get_position())
+    _update_mood_display("Attentive")
 
 
 func _process(delta: float) -> void:
@@ -284,14 +293,14 @@ func _set_state(next_state: String, force: bool = false) -> void:
 
 func _input(event: InputEvent) -> void:
     if event.is_action_pressed("ui_cancel"):
-        if chat_panel.visible:
-            _set_chat_panel_visible(false)
+        if chat_overlay.visible:
+            _set_chat_overlay_visible(false)
             get_viewport().set_input_as_handled()
         return
     if event is InputEventMouseButton:
         var mouse_event := event as InputEventMouseButton
         if mouse_event.button_index == MOUSE_BUTTON_LEFT:
-            if mouse_event.pressed and not chat_panel.visible and not _ui_control_wants_mouse():
+            if mouse_event.pressed and not chat_overlay.visible and not _ui_control_wants_mouse():
                 _dragging = true
                 _drag_offset = mouse_event.global_position - Vector2(DisplayServer.window_get_position())
                 _set_state("wag_tail", true)
@@ -300,7 +309,7 @@ func _input(event: InputEvent) -> void:
             elif not mouse_event.pressed:
                 _dragging = false
         elif mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-            _toggle_chat_panel()
+            _toggle_chat_overlay()
     elif event is InputEventMouseMotion and _dragging:
         var motion_event := event as InputEventMouseMotion
         var next_position := motion_event.global_position - _drag_offset
@@ -308,34 +317,68 @@ func _input(event: InputEvent) -> void:
         _halt_locomotion()
 
 
-func _toggle_chat_panel() -> void:
-    _set_chat_panel_visible(not chat_panel.visible)
+func _toggle_chat_overlay() -> void:
+    _set_chat_overlay_visible(not chat_overlay.visible)
 
 
 func _ui_control_wants_mouse() -> bool:
     var hovered := get_viewport().gui_get_hovered_control()
     if hovered == null:
         return false
-    if hovered == panel_toggle_button:
+    if hovered == chat_toggle or hovered == pet_button or hovered == walk_button:
         return true
     if hovered == bubble:
         return true
-    if chat_panel.is_ancestor_of(hovered):
+    if chat_overlay.is_ancestor_of(hovered):
         return true
     return false
 
 
-func _set_chat_panel_visible(visible: bool) -> void:
-    chat_panel.visible = visible
-    panel_toggle_button.text = "Hide" if visible else "Chat"
+func _set_chat_overlay_visible(visible: bool) -> void:
+    chat_overlay.visible = visible
+    chat_toggle.text = "✕ Close" if visible else "💬 Chat"
     if visible:
         chat_input.grab_focus()
         _set_bubble_text("Ask Kai anything.")
+        _update_mood_display("Listening")
         return
     _dragging = false
     if chat_input.has_focus():
         chat_input.release_focus()
     _set_bubble_text("Tap Chat or right click to talk again.")
+    _update_mood_display("Attentive")
+
+
+# ─── Action Bar Handlers ───
+
+func _on_pet_pressed() -> void:
+    _set_state("wag_tail", true)
+    _alert_hold = randf_range(0.35, 0.8)
+    _set_bubble_text(PET_LINES[randi() % PET_LINES.size()], 3.0)
+    _update_mood_display("Happy")
+
+
+func _on_walk_pressed() -> void:
+    if _state == "walk":
+        _halt_locomotion()
+        _set_state("idle")
+        _set_bubble_text("Stopping.", 2.0)
+        _update_mood_display("Attentive")
+    else:
+        _begin_walk("patrol")
+        _update_mood_display("Patrolling")
+
+
+func _on_voice_pressed() -> void:
+    # Placeholder for voice input — requires platform-specific STT
+    _set_bubble_text("Voice input coming soon. Type for now!", 3.0)
+
+
+# ─── Mood Display ───
+
+func _update_mood_display(mood_text: String) -> void:
+    if mood_label:
+        mood_label.text = mood_text
 
 
 func _configure_desktop_window() -> void:
@@ -613,7 +656,7 @@ func _compute_desired_yaw() -> float:
 func _update_cursor_reactions() -> void:
     if not ENABLE_CURSOR_REACTIONS:
         return
-    if _dragging or chat_panel.visible or _state == "thinking" or _state == "walk" or _state == "rest":
+    if _dragging or chat_overlay.visible or _state == "thinking" or _state == "walk" or _state == "rest":
         return
     if _interaction_cooldown > 0.0:
         return
@@ -957,7 +1000,7 @@ func _settle_after_walk() -> void:
 
 
 func _update_desktop_patrol(delta: float) -> void:
-    if _dragging or chat_panel.visible:
+    if _dragging or chat_overlay.visible:
         _halt_locomotion()
         return
     _interest_timer = max(0.0, _interest_timer - delta)
@@ -1032,7 +1075,7 @@ func _update_desktop_patrol(delta: float) -> void:
 
 
 func _update_ambient_behavior(delta: float) -> void:
-    if chat_panel.visible or _state == "thinking" or _dragging:
+    if chat_overlay.visible or _state == "thinking" or _dragging:
         return
     _rest_timer += delta
     if _state in ["walk", "sniff", "bark"]:
@@ -1063,7 +1106,7 @@ func _set_bubble_text(text: String, duration: float = 5.0) -> void:
 
 
 func _update_bubble(delta: float) -> void:
-    if chat_panel.visible:
+    if chat_overlay.visible:
         return
     if _bubble_timeout > 0.0:
         _bubble_timeout = max(0.0, _bubble_timeout - delta)
@@ -1088,6 +1131,7 @@ func _send_chat_message() -> void:
     _trim_chat_history()
     _set_state("thinking", true)
     _set_bubble_text("Thinking...")
+    _update_mood_display("Thinking...")
     _pending_chat_message = message
 
     _request_chat_backend("kai_server")
@@ -1153,11 +1197,15 @@ func _finish_chat_with_reply(content: String) -> void:
     _pending_chat_message = ""
     send_button.disabled = false
     chat_input.editable = true
+    chat_input.grab_focus()
     _chat_history.append({"role": "assistant", "content": content})
     _trim_chat_history()
     _append_chat("Kai", content)
     _set_state("wag_tail", true)
     _set_bubble_text(content.left(54))
+    _update_mood_display("Happy")
+    # Settle mood back after a moment
+    get_tree().create_timer(3.0).timeout.connect(func(): _update_mood_display("Listening"))
 
 
 func _offline_chat_reply() -> String:
