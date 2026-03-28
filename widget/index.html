@@ -7,10 +7,50 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="icon" href="./kai-logo.svg" type="image/svg+xml" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .loading-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        background: #1A1612;
+        transition: opacity 0.6s ease, visibility 0.6s ease;
+      }
+      .loading-splash.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+      .loading-splash .logo-spin {
+        width: 64px;
+        height: 64px;
+        animation: breathe 2s ease-in-out infinite;
+        filter: drop-shadow(0 0 20px rgba(196, 120, 58, 0.4));
+      }
+      .loading-splash .load-text {
+        margin-top: 16px;
+        color: #8B7355;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+      }
+      @keyframes breathe {
+        0%, 100% { transform: scale(1); opacity: 0.7; }
+        50% { transform: scale(1.05); opacity: 1; }
+      }
+    </style>
   </head>
   <body>
+    <div class="loading-splash" id="loadingSplash">
+      <div style="text-align:center">
+        <img src="./kai-logo.svg" alt="" class="logo-spin" />
+        <p class="load-text">Waking Kai...</p>
+      </div>
+    </div>
     <main class="shell">
       <section class="frame">
         <header class="topbar">

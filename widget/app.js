@@ -133,3 +133,10 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
 // ─── Init ───
 pingHealth();
 inputEl.focus();
+
+// Hide loading splash
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loadingSplash')?.classList.add('hidden');
+  }, 600);
+});
