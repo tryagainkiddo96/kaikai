@@ -178,6 +178,12 @@ const WALK_STEP_RATE := 7.8
 const ENABLE_CURSOR_REACTIONS := false
 const BASE_PITCH_OFFSET := -0.045
 
+# Pose blending — smooth transitions between states
+const POSE_BLEND_SPEED := 3.5
+var _pose_blend := 0.0
+var _ear_twitch_timer := 0.0
+var _ear_twitch_side := 0.0
+
 
 func _ready() -> void:
     _configure_desktop_window()
@@ -604,56 +610,91 @@ func _update_cursor_reactions() -> void:
 func _update_model_pose() -> void:
     if _model_root == null:
         return
-    var bob := sin(_time * BREATH_IDLE_RATE) * 0.04
+
+    # Multi-layer breathing for organic feel
+    var breath_chest := sin(_time * BREATH_IDLE_RATE) * 0.04
+    var breath_belly := sin(_time * BREATH_IDLE_RATE * 0.7 + 0.5) * 0.025
     var sway := sin(_time * 1.35) * 0.05
     var head_tilt := sin(_time * 1.8) * 0.04
+    var weight_shift_x := sin(_time * 0.4) * 0.008
+
     _yaw_target = _compute_desired_yaw()
     _yaw_current = lerp_angle(_yaw_current, _yaw_target, min(1.0, _frame_delta * TURN_SMOOTH_SPEED))
+
+    # Random ear twitches during idle
+    _ear_twitch_timer -= _frame_delta
+    if _ear_twitch_timer <= 0.0 and _state == "idle":
+        _ear_twitch_timer = randf_range(3.0, 8.0)
+        _ear_twitch_side = -1.0 if randf() < 0.5 else 1.0
+    var ear_twitch := 0.0
+    if _ear_twitch_timer > 0.0 and _ear_twitch_timer < 0.15:
+        ear_twitch = sin(_ear_twitch_timer * 30.0) * 0.03 * _ear_twitch_side
 
     var state_yaw := _yaw_current
     if _state != "walk":
         state_yaw += NON_WALK_YAW_OFFSET
-    _model_root.rotation.y = state_yaw
-    _model_root.rotation.z = sway * 0.12
+
+    var target_pos := Vector3.ZERO
+    var target_rot := Vector3.ZERO
+    var target_scale := MODEL_BASE_SCALE
 
     match _state:
         "rest":
             var rest_breath := sin(_time * BREATH_REST_RATE) * 0.028
             var rest_sway := sin(_time * 0.9) * 0.018
-            _model_root.position = Vector3(0.0, -0.96 + rest_breath * 0.12, 0.0)
-            _model_root.rotation.x = BASE_PITCH_OFFSET - 0.08 + rest_breath * 0.08
-            _model_root.rotation.z = -0.04 + rest_sway
-            if not _has_walk_animation:
-                _model_root.rotation.z += STATIC_LAYDOWN_ROLL_FIX
-            _model_root.scale = Vector3.ONE * (MODEL_BASE_SCALE - 0.08 + rest_breath * 0.01)
+            target_pos = Vector3(weight_shift_x * 0.5, -0.96 + rest_breath * 0.12, 0.0)
+            target_rot = Vector3(
+                BASE_PITCH_OFFSET - 0.08 + rest_breath * 0.08,
+                state_yaw,
+                -0.04 + rest_sway + (0.0 if _has_walk_animation else STATIC_LAYDOWN_ROLL_FIX)
+            )
+            target_scale = MODEL_BASE_SCALE - 0.08 + rest_breath * 0.01
             _play_animation_prefer(["kai_rest", "rest", "sleep", "lie", "idle", "stand", "RESET", "ArmatureAction"], 0.82)
         "walk":
             var step_phase := _time * WALK_STEP_RATE
-            var step_bob := sin(step_phase) * 0.022
-            var step_roll := sin(step_phase * 0.5) * 0.07
-            var step_pitch := sin(step_phase + (PI * 0.5)) * 0.035
-            var step_sway_x := sin(step_phase * 0.5) * 0.02
-            _model_root.position = Vector3(
-                MODEL_BASE_POSITION.x + step_sway_x,
+            var speed_factor := clamp(_locomotion_smoothed_speed / WALK_SPEED_MAX, 0.0, 1.0)
+            var step_bob := sin(step_phase) * 0.022 * (0.6 + speed_factor * 0.4)
+            var step_roll := sin(step_phase * 0.5) * 0.07 * speed_factor
+            var step_pitch := sin(step_phase + PI * 0.5) * 0.035 * speed_factor
+            var step_sway_x := sin(step_phase * 0.5) * 0.02 * speed_factor
+            var turn_lean := 0.0
+            if _locomotion_velocity.length() > 5.0:
+                turn_lean = -sin(_yaw_current - _yaw_target) * 0.04 * speed_factor
+            target_pos = Vector3(
+                MODEL_BASE_POSITION.x + step_sway_x + weight_shift_x,
                 MODEL_BASE_POSITION.y + step_bob,
                 MODEL_BASE_POSITION.z
             )
-            _model_root.rotation.x = BASE_PITCH_OFFSET + 0.03 + step_pitch
-            _model_root.rotation.z = step_roll
-            _model_root.scale = Vector3.ONE * (MODEL_BASE_SCALE + sin(_time * 8.0) * 0.008)
+            target_rot = Vector3(
+                BASE_PITCH_OFFSET + 0.03 + step_pitch,
+                state_yaw,
+                step_roll + turn_lean
+            )
+            target_scale = MODEL_BASE_SCALE + sin(_time * 8.0) * 0.008 * speed_factor
             if _has_walk_animation:
                 _play_animation_prefer(
                     ["kai_walk", "walk", "trot", "run", "gallop", "locomotion", "move", "cycle"],
-                    clamp(0.9 + (_locomotion_smoothed_speed / WALK_SPEED_MAX) * 0.55, 0.9, 1.45)
+                    clamp(0.9 + speed_factor * 0.55, 0.9, 1.45)
                 )
             else:
                 _play_animation_prefer(["kai_walk", "kai_idle", "idle", "stand", "RESET", "ArmatureAction"], 1.05)
         "alert", "thinking", "wag_tail":
             var sit_breath := sin(_time * BREATH_SIT_RATE) * 0.02
-            _model_root.position = Vector3(MODEL_BASE_POSITION.x, MODEL_BASE_POSITION.y + bob * 0.08 + sit_breath * 0.12, MODEL_BASE_POSITION.z)
-            _model_root.rotation.x = BASE_PITCH_OFFSET + sit_breath * 0.08
-            _model_root.rotation.z = head_tilt
-            _model_root.scale = Vector3.ONE * (MODEL_BASE_SCALE + sit_breath * 0.008)
+            var alert_bob := breath_chest * 0.08 + sit_breath * 0.12
+            var wag_lean := 0.0
+            if _state == "wag_tail":
+                wag_lean = sin(_time * 7.0) * 0.02
+            target_pos = Vector3(
+                MODEL_BASE_POSITION.x + weight_shift_x,
+                MODEL_BASE_POSITION.y + alert_bob,
+                MODEL_BASE_POSITION.z
+            )
+            target_rot = Vector3(
+                BASE_PITCH_OFFSET + sit_breath * 0.08,
+                state_yaw,
+                head_tilt + wag_lean
+            )
+            target_scale = MODEL_BASE_SCALE + sit_breath * 0.008
             if _state == "wag_tail":
                 _play_animation_prefer(["kai_wag", "wag", "tail", "happy", "idle", "stand", "RESET", "ArmatureAction"], 1.12)
             elif _state == "thinking":
@@ -662,26 +703,55 @@ func _update_model_pose() -> void:
                 _play_animation_prefer(["kai_alert", "alert", "look", "notice", "idle", "stand", "RESET", "ArmatureAction"], 1.04)
         "sniff":
             var sniff_breath := sin(_time * 2.2) * 0.016
-            _model_root.position = Vector3(MODEL_BASE_POSITION.x, MODEL_BASE_POSITION.y - 0.01 + sniff_breath * 0.12, MODEL_BASE_POSITION.z)
-            _model_root.rotation.x = BASE_PITCH_OFFSET + 0.14 + sniff_breath * 0.06
-            _model_root.rotation.z = head_tilt * 0.35
-            _model_root.scale = Vector3.ONE * (MODEL_BASE_SCALE + sniff_breath * 0.004)
+            var sniff_nod := sin(_time * 4.5) * 0.02
+            target_pos = Vector3(
+                MODEL_BASE_POSITION.x + weight_shift_x * 0.5,
+                MODEL_BASE_POSITION.y - 0.01 + sniff_breath * 0.12,
+                MODEL_BASE_POSITION.z
+            )
+            target_rot = Vector3(
+                BASE_PITCH_OFFSET + 0.14 + sniff_nod,
+                state_yaw,
+                head_tilt * 0.35
+            )
+            target_scale = MODEL_BASE_SCALE + sniff_breath * 0.004
             _play_animation_prefer(["kai_alert", "alert", "look", "notice", "idle", "stand", "RESET", "ArmatureAction"], 0.92)
         "bark":
             var bark_bob := sin(_time * 9.5) * 0.014
-            _model_root.position = Vector3(MODEL_BASE_POSITION.x, MODEL_BASE_POSITION.y + bark_bob, MODEL_BASE_POSITION.z)
-            _model_root.rotation.x = BASE_PITCH_OFFSET - 0.02
-            _model_root.rotation.z = sway * 0.06
-            _model_root.scale = Vector3.ONE * (MODEL_BASE_SCALE + 0.012)
+            target_pos = Vector3(
+                MODEL_BASE_POSITION.x + weight_shift_x,
+                MODEL_BASE_POSITION.y + bark_bob,
+                MODEL_BASE_POSITION.z
+            )
+            target_rot = Vector3(
+                BASE_PITCH_OFFSET - 0.02,
+                state_yaw,
+                sway * 0.06
+            )
+            target_scale = MODEL_BASE_SCALE + 0.012
             _play_animation_prefer(["kai_alert", "alert", "look", "notice", "idle", "stand", "RESET", "ArmatureAction"], 1.18)
         _:
-            var idle_breath := sin(_time * BREATH_IDLE_RATE) * 0.018
-            _model_root.position = Vector3(MODEL_BASE_POSITION.x, MODEL_BASE_POSITION.y + bob * 0.08 + idle_breath * 0.12, MODEL_BASE_POSITION.z)
-            _model_root.rotation.x = BASE_PITCH_OFFSET + 0.01 + idle_breath * 0.08
-            _model_root.rotation.z = head_tilt * 0.5
-            _model_root.scale = Vector3.ONE * (MODEL_BASE_SCALE + idle_breath * 0.006)
+            var idle_breath := breath_chest * 0.08 + breath_belly * 0.12
+            target_pos = Vector3(
+                MODEL_BASE_POSITION.x + weight_shift_x + ear_twitch * 0.5,
+                MODEL_BASE_POSITION.y + idle_breath,
+                MODEL_BASE_POSITION.z
+            )
+            target_rot = Vector3(
+                BASE_PITCH_OFFSET + 0.01 + breath_belly * 0.08,
+                state_yaw + ear_twitch * 0.3,
+                head_tilt * 0.5 + ear_twitch * 0.2
+            )
+            target_scale = MODEL_BASE_SCALE + breath_chest * 0.006
             _play_animation_prefer(["kai_idle", "idle", "stand", "rest", "RESET", "ArmatureAction"], 0.97 + sin(_time * 0.37) * 0.05)
 
+    # Smooth pose interpolation
+    var blend := min(1.0, _frame_delta * POSE_BLEND_SPEED)
+    _model_root.position = _model_root.position.lerp(target_pos, blend)
+    _model_root.rotation.x = lerp(_model_root.rotation.x, target_rot.x, blend)
+    _model_root.rotation.y = target_rot.y
+    _model_root.rotation.z = lerp(_model_root.rotation.z, target_rot.z, blend)
+    _model_root.scale = _model_root.scale.lerp(Vector3.ONE * target_scale, blend)
 
 func _desktop_bounds() -> Vector2:
     var screen_size := Vector2(DisplayServer.screen_get_size())
