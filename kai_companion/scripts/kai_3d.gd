@@ -130,36 +130,63 @@ const AMBIENT_LINES := [
     "Busy little Shiba patrol underway.",
     "Independent face. Loyal intentions.",
     "Leash still on. Escape plan still active.",
+    "Keeping an eye on things. That's my job.",
+    "Tail status: cautiously optimistic.",
+    "I see everything. I just pretend I don't.",
+    "Professional surveillance mode.",
+    "One ear up. Listening for trouble.",
+    "Quiet now. Thinking about snacks.",
 ]
 
 const PET_LINES := [
     "Mrrf. Acceptable. Keep going.",
     "Tail says yes. Face says act natural.",
     "I was patrolling, but this is fine.",
+    "This is beneath my dignity. Continue anyway.",
+    "Fine. You may touch the Shiba.",
+    "Sigh. I love you too.",
+    "Professional stoicism... failing.",
 ]
 
 const NOTICE_LINES := [
     "Sniff check.",
     "Something moved. Probably important.",
     "Just checking the room again.",
+    "Ears up. Something's interesting.",
+    "Hold on. Processing stimulus.",
+    "My ears work. Unlike my obedience.",
 ]
 
 const SNIFF_LINES := [
     "Sniffing the perimeter.",
     "Hold on. Scent check.",
     "This spot needs a proper inspection.",
+    "Nose says: investigate further.",
+    "Sniff sniff. Data collected.",
 ]
 
 const BARK_LINES := [
     "Woof. I saw that.",
     "Alert bark issued.",
     "Tiny bark. Big security energy.",
+    "Bark dispatched. Threat level: unknown.",
+    "Consider yourself warned.",
 ]
 
 const ZOOMY_LINES := [
     "Tiny security sprint. Very serious business.",
     "Zoom check. Floor approved.",
     "Quick patrol burst. No questions.",
+    "Speed run. Don't read into it.",
+    "I have the zoomies. Professionally.",
+]
+
+const SLEEP_LINES := [
+    "Resting with one eye open.",
+    "Resting with one eye open.",
+    "Power nap. Security continues.",
+    "Sleep mode. Ears still active.",
+    "Recharging the loyalty batteries.",
 ]
 
 const OFFLINE_REPLY_LINES := [
@@ -922,7 +949,7 @@ func _settle_after_walk() -> void:
     if randf() < 0.22:
         _set_state("rest")
         _rest_duration = randf_range(4.5, 8.0)
-        _set_bubble_text("Taking a dramatic little Shiba break.", 2.8)
+        _set_bubble_text("Resting with one eye open.", 2.8)
         return
     _begin_watch_post()
     if randf() < 0.4:
@@ -1015,7 +1042,7 @@ func _update_ambient_behavior(delta: float) -> void:
         _rest_timer = 0.0
         _walk_pause = 0.0
         _rest_duration = randf_range(4.5, 8.5)
-        _set_bubble_text("Taking a dramatic little Shiba break.", 3.0)
+        _set_bubble_text("Resting with one eye open.", 3.0)
         return
     if _state == "alert" and _bark_cooldown <= 0.0 and randf() < BARK_TRIGGER_CHANCE:
         _begin_bark()
