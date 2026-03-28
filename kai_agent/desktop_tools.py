@@ -12,6 +12,7 @@ from queue import Empty, Queue
 from pathlib import Path
 
 from kai_agent.browser_tools import BrowserTools
+from kai_agent.document_handler import DocumentHandler
 from kai_agent.tavily_client import TavilyClient
 
 
@@ -30,6 +31,7 @@ class DesktopTools:
         self.kali_session_cwd = self._to_wsl_path(self.workspace)
         self.tavily = TavilyClient()
         self.browser = BrowserTools(workspace)
+        self.documents = DocumentHandler(workspace)
 
     def classify_command(self, command: str, shell: str = "powershell") -> dict:
         lowered = command.strip().lower()
@@ -850,6 +852,27 @@ class DesktopTools:
     def screenshot(self, filename: str = "kai_screenshot.png") -> str:
         """Take a screenshot."""
         return self.browser.screenshot(filename)
+
+    # Document methods
+    def list_documents(self, category: str = None) -> str:
+        """List documents."""
+        return self.documents.list_documents(category)
+
+    def find_document(self, query: str) -> str:
+        """Find documents by name."""
+        return self.documents.find_document(query)
+
+    def read_document(self, path: str) -> str:
+        """Read a document."""
+        return self.documents.read_document(path)
+
+    def organize_downloads(self) -> str:
+        """Organize downloaded files."""
+        return self.documents.organize_downloads()
+
+    def document_stats(self) -> str:
+        """Get document library stats."""
+        return self.documents.get_stats()
 
     def _ocr_image(self, image_path: Path, text_base: Path) -> str:
         if not TESSERACT_PATH.exists():

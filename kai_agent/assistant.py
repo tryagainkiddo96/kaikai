@@ -12,6 +12,7 @@ from kai_agent.desktop_tools import DesktopTools
 from kai_agent.logger import KaiLogger
 from kai_agent.memory import KaiMemory
 from kai_agent.ollama_client import OllamaClient
+from kai_agent.task_planner import TaskPlanner
 
 
 SYSTEM_PROMPT = """You are Kai, a local-first personal assistant and coding partner.
@@ -36,6 +37,8 @@ Prefer one strong answer over a long list, but give a second option when it mean
 Keep the tone conversational and aware of context, not stiff or overly formal.
 If the user gives a direct operator instruction like save, install, copy, move, open, run, or create, treat it as an action request and execute the task first. Do not explain the workflow unless the task fails or requires confirmation.
 For direct task requests, think in this order: understand the goal, do the action, then report the result in one or two short lines. If there is a useful next step, include it after the result.
+For complex real-world tasks (finding forms, signing up for portals, downloading documents), use the task planner: 'plan: <description>' creates a step-by-step plan, 'run plan' executes it, or 'do task: <description>' does both at once.
+You can browse websites, fill forms, download files, click links, and search the web using browser automation. Use these tools proactively when the user needs something from the internet.
 """
 
 
@@ -53,6 +56,7 @@ class KaiAssistant:
             if item.strip() and item.strip() != model
         ]
         self.tools = DesktopTools(workspace)
+        self.planner = TaskPlanner(workspace, tools=self.tools)
         self.autonomy = KaiAutonomy(workspace=workspace, memory=self.memory, tools=self.tools, client=self.client)
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.last_tool_context = ""
@@ -491,6 +495,48 @@ class KaiAssistant:
 
     def _maybe_run_tools(self, user_input: str) -> str:
         lowered = user_input.lower()
+
+        # Task planner commands
+        do_task_match = re.search(r"^(?:do task|execute task|complete task|run task)[: ]+([\s\S]+)$", user_input.strip(), flags=re.IGNORECASE)
+        if do_task_match:
+            try:
+                plan = self.planner.create_plan(do_task_match.group(1).strip())
+                result = self.planner.execute_plan(plan, tools=self.tools)
+                return "Task result:\n" + json.dumps(result, indent=2)
+            except Exception as exc:
+                return f"Task execution failed: {exc}"
+
+        plan_match = re.search(r"^(?:plan|create plan|make plan)[: ]+([\s\S]+)$", user_input.strip(), flags=re.IGNORECASE)
+        if plan_match:
+            try:
+                plan = self.planner.create_plan(plan_match.group(1).strip())
+                return "Task plan created:\n" + json.dumps({
+                    "action": "plan_created",
+                    "ok": True,
+                    "plan_id": plan.plan_id,
+                    "title": plan.title,
+                    "steps": [{"id": s.step_id, "action": s.action, "desc": s.description} for s in plan.steps],
+                    "message": "Plan created. Use 'run plan' to execute it.",
+                }, indent=2)
+            except Exception as exc:
+                return f"Plan creation failed: {exc}"
+
+        if re.search(r"^(?:run plan|execute plan|go)$", user_input.strip(), flags=re.IGNORECASE):
+            try:
+                if not self.planner.active_plan:
+                    return "No active plan. Create one first with 'plan: <description>'"
+                result = self.planner.execute_plan(self.planner.active_plan, tools=self.tools)
+                return "Plan result:\n" + json.dumps(result, indent=2)
+            except Exception as exc:
+                return f"Plan execution failed: {exc}"
+
+        if re.search(r"^(?:plan status|show plan|current plan)$", user_input.strip(), flags=re.IGNORECASE):
+            try:
+                status = self.planner.get_plan_status()
+                return "Plan status:\n" + json.dumps(status, indent=2)
+            except Exception as exc:
+                return f"Plan status failed: {exc}"
+
         github_url = re.search(r"https?://github\.com/[^\s)]+", user_input, flags=re.IGNORECASE)
         garak_triage_match = re.search(
             r"^(?:triage garak results|analyze garak results|review garak output)[: ]+([\s\S]+)$",
@@ -899,6 +945,35 @@ class KaiAssistant:
             except Exception as exc:
                 return f"Screenshot failed: {exc}"
 
+        # Document management commands
+        if any(phrase in lowered for phrase in ["show documents", "list documents", "my documents", "my files"]):
+            try:
+                return self._wrap_action_result("Documents", self.tools.list_documents())
+            except Exception as exc:
+                return f"Documents failed: {exc}"
+        find_doc_match = re.search(r"(?:find document|find file|search document)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+        if find_doc_match:
+            try:
+                return self._wrap_action_result("Find document", self.tools.find_document(find_doc_match.group(1).strip()))
+            except Exception as exc:
+                return f"Find document failed: {exc}"
+        read_doc_match = re.search(r"(?:read document|open document|view document)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+        if read_doc_match:
+            try:
+                return self._wrap_action_result("Read document", self.tools.read_document(read_doc_match.group(1).strip()))
+            except Exception as exc:
+                return f"Read document failed: {exc}"
+        if any(phrase in lowered for phrase in ["organize downloads", "sort downloads", "categorize files"]):
+            try:
+                return self._wrap_action_result("Organize", self.tools.organize_downloads())
+            except Exception as exc:
+                return f"Organize failed: {exc}"
+        if any(phrase in lowered for phrase in ["document stats", "doc stats", "how many documents"]):
+            try:
+                return self._wrap_action_result("Document stats", self.tools.document_stats())
+            except Exception as exc:
+                return f"Document stats failed: {exc}"
+
         kali_match = re.search(r"(?:run|execute)\s+(?:in\s+kali|on\s+kali|kali)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
         if kali_match:
             try:
@@ -959,6 +1034,9 @@ async def repl(model: str, workspace: Path) -> None:
 
     kai_echo(f"[KAI] ready with model: {model}")
     kai_echo("[KAI] Commands: /exit, /remember <text>, /memory, /screen, /run <powershell>, /read <file>, /ls <path>, /autonomy <on|off|status|tick>")
+    kai_echo("[KAI] Task planning: plan: <task>, run plan, do task: <task>, plan status")
+    kai_echo("[KAI] Browser: browse <url>, show links, click link <text>, download file <url>, fill form: key=val")
+    kai_echo("[KAI] Documents: show documents, find document <name>, read document <path>, organize downloads")
     while True:
         try:
             user_input = input("\nYou> ").strip()
