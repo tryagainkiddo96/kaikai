@@ -885,74 +885,130 @@ class KaiAssistant:
             except Exception as exc:
                 return f"Terminal snapshot failed: {exc}"
 
-        # Browser automation commands
-        browse_match = re.search(r"(?:browse|go to|open website|open site|navigate to)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+        # Browser automation commands — natural language friendly
+        browse_match = re.search(
+            r"(?:browse|go to|open website|open site|navigate to|visit|open up|pull up|look at|check out|go check|go look at)[: ]+(.+)$",
+            user_input, flags=re.IGNORECASE,
+        )
         if browse_match:
             try:
                 return self._wrap_action_result("Browse", self.tools.browse(browse_match.group(1).strip()))
             except Exception as exc:
                 return f"Browse failed: {exc}"
-        browser_search_match = re.search(r"(?:browser search|search site|search website|find on web)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
-        if browser_search_match:
+
+        # Natural language search — "look up X", "find X online", "search for X", "what is X on the web"
+        browser_search_match = re.search(
+            r"(?:look up|find .{0,20} online|search for|google|search|find .{0,20} on the web|what is|where can i find|how do i get|look for)[: ]+(.+)$",
+            user_input, flags=re.IGNORECASE,
+        )
+        if browser_search_match and not any(kw in lowered for kw in ["file", "document", "kali"]):
             try:
-                return self._wrap_action_result("Browser search", self.tools.search_browser(browser_search_match.group(1).strip()))
+                return self._wrap_action_result("Search", self.tools.search_browser(browser_search_match.group(1).strip()))
             except Exception as exc:
-                return f"Browser search failed: {exc}"
-        download_match = re.search(r"(?:download file|download from)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
-        if download_match:
+                return f"Search failed: {exc}"
+
+        # Natural language download — "download that", "get that PDF", "save that form"
+        download_match = re.search(
+            r"(?:download|get|save|grab|fetch)[: ]+(?:that |the )?(?:pdf|form|file|document|link)?\s*(.+)$",
+            user_input, flags=re.IGNORECASE,
+        )
+        if download_match and ("http" in download_match.group(1) or "." in download_match.group(1)):
             try:
                 return self._wrap_action_result("Download", self.tools.download_file(url=download_match.group(1).strip()))
             except Exception as exc:
                 return f"Download failed: {exc}"
-        if any(phrase in lowered for phrase in ["show page", "page content", "what's on this page", "read page"]):
+        if any(phrase in lowered for phrase in ["download that", "download this", "get that file", "save that", "grab that", "download the form", "download the pdf"]):
+            try:
+                return self._wrap_action_result("Download", self.tools.download_file())
+            except Exception as exc:
+                return f"Download failed: {exc}"
+
+        # Natural language page reading
+        if any(phrase in lowered for phrase in [
+            "what's on this page", "what is on this page", "read this page", "show me this page",
+            "what does this page say", "summarize this page", "page content", "show page",
+            "what links are here", "what links are on this page",
+        ]):
             try:
                 return self._wrap_action_result("Page content", self.tools.get_page_content())
             except Exception as exc:
                 return f"Page content failed: {exc}"
-        if any(phrase in lowered for phrase in ["show links", "page links", "get links"]):
+
+        if any(phrase in lowered for phrase in ["show links", "page links", "get links", "what links", "list links", "all links"]):
             try:
                 return self._wrap_action_result("Page links", self.tools.get_page_links())
             except Exception as exc:
                 return f"Page links failed: {exc}"
-        click_link_match = re.search(r"(?:click link|click on)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+
+        # Natural language click — "click on patient forms", "open the link that says..."
+        click_link_match = re.search(
+            r"(?:click|click on|open|open the|open that|press|hit|select|choose)[: ]+(?:the |that )?(?:link |button )?(?:that says |labeled |called )?(.+)$",
+            user_input, flags=re.IGNORECASE,
+        )
         if click_link_match:
-            try:
-                return self._wrap_action_result("Click link", self.tools.click_link(click_link_match.group(1).strip()))
-            except Exception as exc:
-                return f"Click link failed: {exc}"
-        if any(phrase in lowered for phrase in ["find forms", "show forms", "page forms"]):
+            text = click_link_match.group(1).strip().strip('"\'')
+            if text:
+                try:
+                    return self._wrap_action_result("Click link", self.tools.click_link(text))
+                except Exception as exc:
+                    return f"Click link failed: {exc}"
+
+        if any(phrase in lowered for phrase in ["find forms", "show forms", "page forms", "any forms here", "is there a form"]):
             try:
                 return self._wrap_action_result("Find forms", self.tools.find_forms())
             except Exception as exc:
                 return f"Find forms failed: {exc}"
-        fill_form_match = re.search(r"(?:fill form|submit form|fill field)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
+
+        # Natural language form filling — "fill in my name as John", "put Jane Doe in the name field"
+        fill_form_match = re.search(r"(?:fill in|fill out|type in|enter|put)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
         if fill_form_match:
             try:
                 raw = fill_form_match.group(1).strip()
                 data = {}
-                for pair in raw.split(","):
-                    if "=" in pair:
+                # Handle "name as John" or "name: John" or "name=John" patterns
+                pairs = re.split(r",\s*| and ", raw)
+                for pair in pairs:
+                    for sep in [" as ", " = ", ": ", " is "]:
+                        if sep in pair:
+                            k, v = pair.split(sep, 1)
+                            data[k.strip().strip('"\'')] = v.strip().strip('"\'')
+                            break
+                    if "=" in pair and not data:
                         k, v = pair.split("=", 1)
                         data[k.strip()] = v.strip()
                 if data:
                     return self._wrap_action_result("Fill form", self.tools.fill_form(data))
-                return "Fill form: no field=value pairs found. Use format: fill form: name=John, email=test@example.com"
             except Exception as exc:
                 return f"Fill form failed: {exc}"
-        if any(phrase in lowered for phrase in ["take screenshot", "screenshot", "capture page"]):
+
+        if any(phrase in lowered for phrase in ["take screenshot", "screenshot", "capture page", "take a picture of this"]):
             try:
                 return self._wrap_action_result("Screenshot", self.tools.screenshot())
             except Exception as exc:
                 return f"Screenshot failed: {exc}"
 
-        # Document management commands
-        if any(phrase in lowered for phrase in ["show documents", "list documents", "my documents", "my files"]):
+        # Natural language close browser
+        if any(phrase in lowered for phrase in ["close browser", "close the browser", "stop browsing", "done browsing"]):
+            try:
+                self.tools.browser.close()
+                return "Browser closed."
+            except Exception as exc:
+                return f"Close browser failed: {exc}"
+
+        # Document management commands — natural language
+        if any(phrase in lowered for phrase in [
+            "show documents", "list documents", "my documents", "my files", "what documents do i have",
+            "show my files", "what files", "show files",
+        ]):
             try:
                 return self._wrap_action_result("Documents", self.tools.list_documents())
             except Exception as exc:
                 return f"Documents failed: {exc}"
-        find_doc_match = re.search(r"(?:find document|find file|search document)[: ]+(.+)$", user_input, flags=re.IGNORECASE)
-        if find_doc_match:
+        find_doc_match = re.search(
+            r"(?:find|search|look for|locate|where is|where's)[: ]+(?:my |the |a )?(?:document |file |form )?(.+)$",
+            user_input, flags=re.IGNORECASE,
+        )
+        if find_doc_match and any(kw in lowered for kw in ["document", "file", "form", "pdf", ".pdf"]):
             try:
                 return self._wrap_action_result("Find document", self.tools.find_document(find_doc_match.group(1).strip()))
             except Exception as exc:
