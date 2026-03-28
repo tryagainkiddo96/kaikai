@@ -53,6 +53,9 @@ $launcher = @"
 @echo off
 cd /d "$KaiDir"
 call .venv\Scripts\activate.bat
+set "KAI_MODEL=qwen3:4b-q4_K_M"
+set "KAI_OLLAMA_TIMEOUT=180"
+start "" "C:\Users\7nujy6xc\AppData\Local\Programs\Ollama\ollama.exe" serve >nul 2>nul
 cls
 echo.
 echo  ========================================
@@ -62,7 +65,7 @@ echo.
 echo  Type your request and press Enter.
 echo  Type /exit to quit.
 echo.
-python -m kai_agent.assistant
+python -m kai_agent.assistant --workspace "$KaiDir"
 pause
 "@
 $launcher | Out-File -FilePath "$Desktop\Start-Kai.bat" -Encoding ASCII
@@ -88,4 +91,6 @@ Write-Host "  Double-click Start-Kai.bat to launch anytime." -ForegroundColor Wh
 Write-Host ""
 
 Read-Host "Press Enter to launch Kai now"
-python -m kai_agent.assistant
+$env:KAI_MODEL = "qwen3:4b-q4_K_M"
+$env:KAI_OLLAMA_TIMEOUT = "180"
+python -m kai_agent.assistant --workspace "$KaiDir"

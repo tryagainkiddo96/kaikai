@@ -4,10 +4,10 @@ from urllib import error, request
 
 
 class OllamaClient:
-    def __init__(self, base_url: str = "http://127.0.0.1:11434", model: str = "xploiter/the-xploiter:latest"):
+    def __init__(self, base_url: str = "http://127.0.0.1:11434", model: str = "qwen3:4b-q4_K_M"):
         self.base_url = base_url.rstrip("/")
-        self.model = model
-        self.default_timeout = int(os.environ.get("KAI_OLLAMA_TIMEOUT", "20"))
+        self.model = os.environ.get("KAI_MODEL", "").strip() or model
+        self.default_timeout = int(os.environ.get("KAI_OLLAMA_TIMEOUT", "180"))
 
     def chat(self, messages: list[dict], timeout: int | None = None) -> str:
         if timeout is None:

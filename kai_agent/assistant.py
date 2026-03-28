@@ -48,8 +48,8 @@ class KaiAssistant:
         self.memory = KaiMemory(workspace / "memory")
         self.logger = KaiLogger(workspace / "logs")
         self.client = OllamaClient(model=model)
-        self.fallback_timeout = int(os.environ.get("KAI_FALLBACK_MODEL_TIMEOUT", "12"))
-        fallback_csv = os.environ.get("KAI_FALLBACK_MODELS", "qwen3:4b-q4_K_M,llama2:latest,mistral:latest")
+        self.fallback_timeout = int(os.environ.get("KAI_FALLBACK_MODEL_TIMEOUT", "45"))
+        fallback_csv = os.environ.get("KAI_FALLBACK_MODELS", "mistral:latest,llama2:latest")
         self.fallback_models = [
             item.strip()
             for item in fallback_csv.split(",")
@@ -174,38 +174,323 @@ class KaiAssistant:
         except Exception:
             research = {"ok": False, "error": "web research parsing failed"}
 
-        if not research.get("ok"):
+        if research.get("ok"):
+            answer = str(research.get("answer", "")).strip()
+            results = research.get("results", [])[:5]
+            lines = [
+                "[Recovery mode] Local model was unavailable, so I switched to live web research.",
+                "[High confidence] Here is the best available evidence right now:",
+            ]
+            if answer:
+                lines.append(answer)
+            if results:
+                lines.append("Sources:")
+                for item in results:
+                    title = item.get("title", "Untitled source")
+                    url = item.get("url", "")
+                    lines.append(f"- {title} - {url}")
             self.logger.log(
-                "assistant_fallback_failed",
+                "assistant_fallback_web",
                 user_input=user_input,
                 primary_model=self.client.model,
                 primary_error=primary_error,
-                web_error=research.get("error", "web research unavailable"),
+                sources_count=len(results),
             )
-            return ""
+            return "\n".join(lines)
 
-        answer = str(research.get("answer", "")).strip()
-        results = research.get("results", [])[:5]
-        lines = [
-            "[Recovery mode] Local model was unavailable, so I switched to live web research.",
-            "[High confidence] Here is the best available evidence right now:",
-        ]
-        if answer:
-            lines.append(answer)
-        if results:
-            lines.append("Sources:")
-            for item in results:
-                title = item.get("title", "Untitled source")
-                url = item.get("url", "")
-                lines.append(f"- {title} - {url}")
+        browser_reply = self._browser_fallback_response(user_input, primary_error, research.get("error", "web research unavailable"))
+        if browser_reply:
+            return browser_reply
+
         self.logger.log(
-            "assistant_fallback_web",
+            "assistant_fallback_failed",
             user_input=user_input,
             primary_model=self.client.model,
             primary_error=primary_error,
-            sources_count=len(results),
+            web_error=research.get("error", "web research unavailable"),
+        )
+        return ""
+
+    def _browser_fallback_response(self, user_input: str, primary_error: str, web_error: str) -> str:
+        try:
+            search = json.loads(self.tools.search_browser(user_input))
+        except Exception as exc:
+            self.logger.log(
+                "assistant_browser_fallback_error",
+                user_input=user_input,
+                primary_model=self.client.model,
+                primary_error=primary_error,
+                browser_error=str(exc),
+                web_error=web_error,
+            )
+            return ""
+
+        if not search.get("ok"):
+            self.logger.log(
+                "assistant_browser_fallback_failed",
+                user_input=user_input,
+                primary_model=self.client.model,
+                primary_error=primary_error,
+                browser_error=search.get("error", "browser search unavailable"),
+                web_error=web_error,
+            )
+            return ""
+
+        results = search.get("results", [])[:5]
+        lines = [
+            "[Recovery mode] Local model was unavailable, so I switched to browser-based web search.",
+            "[Medium confidence] Here is the best browser-based evidence I found:",
+        ]
+        top_page_summary = self._browser_fallback_page_summary(results)
+        if top_page_summary:
+            lines.extend(top_page_summary)
+        auto_download = self._browser_fallback_auto_download(user_input)
+        if auto_download:
+            lines.extend(auto_download)
+        if results:
+            lines.append("Related links:")
+            for item in results:
+                title = item.get("title", "Untitled result")
+                url = item.get("url", "")
+                snippet = str(item.get("snippet", "")).strip()
+                lines.append(f"- {title} - {url}")
+                if snippet:
+                    lines.append(f"  {snippet[:220]}")
+        else:
+            lines.append("No strong browser search results were returned.")
+        self.logger.log(
+            "assistant_fallback_browser",
+            user_input=user_input,
+            primary_model=self.client.model,
+            primary_error=primary_error,
+            browser_results=len(results),
+            web_error=web_error,
         )
         return "\n".join(lines)
+
+    def _browser_fallback_page_summary(self, results: list[dict]) -> list[str]:
+        if not results:
+            return []
+
+        for item in self._rank_browser_results(results)[:3]:
+            url = str(item.get("url", "")).strip()
+            title = str(item.get("title", "Untitled result")).strip()
+            if not url:
+                continue
+            try:
+                browse = json.loads(self.tools.browse(url))
+                if not browse.get("ok"):
+                    continue
+                content = json.loads(self.tools.get_page_content())
+                text = str(content.get("text") or browse.get("text_preview") or "").strip()
+                if not text:
+                    continue
+                summary_lines = self._summarize_browser_text(title, url, text)
+                exact_links = self._extract_browser_download_links()
+                if exact_links:
+                    summary_lines.extend(exact_links)
+                if summary_lines:
+                    return summary_lines
+            except Exception:
+                continue
+        return []
+
+    def _rank_browser_results(self, results: list[dict]) -> list[dict]:
+        def score(item: dict) -> int:
+            title = str(item.get("title", "")).lower()
+            url = str(item.get("url", "")).lower()
+            blob = f"{title} {url}"
+            points = 0
+            if "release" in blob or "disclosure" in blob:
+                points += 6
+            if "medical record" in blob or "medical records" in blob:
+                points += 6
+            if "download" in blob and "form" in blob:
+                points += 5
+            if "authorization" in blob or "phi" in blob:
+                points += 4
+            if "patient" in blob and "form" in blob:
+                points += 3
+            if "financial" in blob or "billing" in blob:
+                points -= 5
+            return points
+
+        return sorted(results, key=score, reverse=True)
+
+    def _summarize_browser_text(self, title: str, url: str, text: str) -> list[str]:
+        normalized = " ".join(text.split())
+        if not normalized:
+            return []
+
+        summary = normalized[:900]
+        sentences = re.split(r"(?<=[.!?])\s+", summary)
+        picked: list[str] = []
+        priority_terms = [
+            "download",
+            "form",
+            "medical record",
+            "authorization",
+            "release",
+            "mychart",
+            "call",
+            "phone",
+            "contact",
+            "processing time",
+        ]
+        for sentence in sentences:
+            clean = sentence.strip()
+            lowered = clean.lower()
+            if clean and any(term in lowered for term in priority_terms):
+                picked.append(clean)
+            if len(picked) >= 3:
+                break
+
+        if not picked:
+            picked = [sentence.strip() for sentence in sentences if sentence.strip()][:3]
+
+        lines = [
+            f"Top page: {title}",
+            f"URL: {url}",
+        ]
+        lines.extend(f"- {line[:260]}" for line in picked if line)
+        return lines
+
+    def _extract_browser_download_links(self) -> list[str]:
+        try:
+            download_info = json.loads(self.tools.download_file())
+        except Exception:
+            download_info = {}
+
+        candidates: list[dict] = []
+        if download_info.get("ok"):
+            candidates.extend(download_info.get("available_files", [])[:10])
+
+        try:
+            links_info = json.loads(self.tools.get_page_links())
+        except Exception:
+            links_info = {}
+
+        if links_info.get("ok"):
+            for item in links_info.get("links", [])[:200]:
+                href = str(item.get("href", "")).strip()
+                text = str(item.get("text", "")).strip()
+                lowered = f"{text} {href}".lower()
+                if any(term in lowered for term in ["release", "authorization", "medical records", "medical record", "phi", "disclosure", "form", ".pdf", ".doc"]):
+                    candidates.append({"url": href, "text": text})
+
+        normalized: list[tuple[int, str, str]] = []
+        seen: set[str] = set()
+        for item in candidates:
+            url = str(item.get("url", "")).strip()
+            text = str(item.get("text", "")).strip()
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            lowered = f"{text} {url}".lower()
+            score = 0
+            if "release" in lowered or "disclosure" in lowered:
+                score += 4
+            if "medical record" in lowered or "medical records" in lowered:
+                score += 4
+            if "authorization" in lowered or "phi" in lowered:
+                score += 3
+            if ".pdf" in lowered or ".doc" in lowered:
+                score += 2
+            if "form" in lowered:
+                score += 1
+            normalized.append((score, text or "Download link", url))
+
+        normalized.sort(key=lambda item: item[0], reverse=True)
+        if not normalized:
+            return []
+
+        lines = ["Possible form/download links:"]
+        for _, text, url in normalized[:5]:
+            lines.append(f"- {text} - {url}")
+        return lines
+
+    def _browser_fallback_auto_download(self, user_input: str) -> list[str]:
+        lowered = user_input.lower()
+        if not any(term in lowered for term in ["download", "get", "grab", "save"]):
+            return []
+        ranked_links = self._rank_browser_download_candidates()
+        if not ranked_links:
+            return []
+
+        for _, text, url in ranked_links[:3]:
+            lowered = f"{text} {url}".lower()
+            if not any(term in lowered for term in ["release", "disclosure", "medical record", "medical records", "authorization", "phi"]):
+                continue
+            try:
+                filename = self._build_download_filename(text, url)
+                download = json.loads(self.tools.download_file(url, filename))
+            except Exception:
+                continue
+            if download.get("ok"):
+                path = download.get("path", "")
+                return [
+                    "Downloaded best match:",
+                    f"- {text} - {url}",
+                    f"- Saved to {path}",
+                ]
+        return []
+
+    def _rank_browser_download_candidates(self) -> list[tuple[int, str, str]]:
+        try:
+            download_info = json.loads(self.tools.download_file())
+        except Exception:
+            download_info = {}
+
+        candidates: list[dict] = []
+        if download_info.get("ok"):
+            candidates.extend(download_info.get("available_files", [])[:20])
+
+        try:
+            links_info = json.loads(self.tools.get_page_links())
+        except Exception:
+            links_info = {}
+
+        if links_info.get("ok"):
+            for item in links_info.get("links", [])[:200]:
+                href = str(item.get("href", "")).strip()
+                text = str(item.get("text", "")).strip()
+                lowered = f"{text} {href}".lower()
+                if any(term in lowered for term in ["release", "authorization", "medical records", "medical record", "phi", "disclosure", "form", ".pdf", ".doc"]):
+                    candidates.append({"url": href, "text": text})
+
+        normalized: list[tuple[int, str, str]] = []
+        seen: set[str] = set()
+        for item in candidates:
+            url = str(item.get("url", "")).strip()
+            text = str(item.get("text", "")).strip()
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            lowered = f"{text} {url}".lower()
+            score = 0
+            if "release" in lowered or "disclosure" in lowered:
+                score += 4
+            if "medical record" in lowered or "medical records" in lowered:
+                score += 4
+            if "authorization" in lowered or "phi" in lowered:
+                score += 3
+            if ".pdf" in lowered or ".doc" in lowered:
+                score += 2
+            if "form" in lowered:
+                score += 1
+            if "financial" in lowered or "billing" in lowered:
+                score -= 5
+            normalized.append((score, text or "Download link", url))
+
+        normalized.sort(key=lambda item: item[0], reverse=True)
+        return normalized
+
+    def _build_download_filename(self, text: str, url: str) -> str:
+        suffix = Path(url).suffix or ".pdf"
+        slug = re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+        if not slug:
+            slug = "kai_download"
+        return f"{slug[:60]}{suffix}"
 
     def _build_action_preview(self, tool_context: str) -> str:
         if not tool_context or ":\n{" not in tool_context:

@@ -37,3 +37,15 @@ kai_companion/kai_*check*.png
 kai_companion/kai_*region*.png
 kai_companion/kai_live_capture.png
 kai_companion/kai_recovered.png
+
+# Allow committed Kai reference/runtime source assets
+!kai_companion/assets/kai/kai_animated.glb
+!kai_companion/assets/kai/kai_donor_bootstrap_rig_source.fbx
+!kai_companion/assets/kai/kai_mixamo_ready.fbx
+!kai_companion/assets/kai/kai_runtime_candidate.glb
+!kai_companion/assets/kai/kai_runtime_candidate_render.png
+!kai_companion/assets/kai/kai_texture_workspace.blend
+!kai_companion/assets/kai/kai_textured.bin
+!kai_companion/assets/kai/kai_textured_rigged.glb
+!kai_companion/assets/kai/kai_textured_rigged_weightbake_test.glb
+!kai_companion/assets/kai/modelToUsed.glb
