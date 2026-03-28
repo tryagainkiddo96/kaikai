@@ -1,7 +1,8 @@
 :root {
-  /* Shiba Inu palette — warm, loyal, sharp */
+  /* Shiba Inu palette — fox tones, cream, warm charcoal */
   --kai-cream: #FFF5E1;
   --kai-orange: #E8733A;
+  --kai-orange-dim: #C4622B;
   --kai-amber: #D4943A;
   --kai-charcoal: #1A1612;
   --kai-brown: #2A2218;
@@ -13,6 +14,7 @@
   --kai-fur-dark: #2C2318;
   --kai-fur-shadow: rgba(232, 115, 58, 0.08);
   --kai-glow: rgba(232, 115, 58, 0.25);
+  --kai-amber-glow: rgba(212, 148, 58, 0.5);
 
   --bg: var(--kai-charcoal);
   --panel: rgba(42, 34, 24, 0.95);
@@ -41,7 +43,7 @@ body {
     linear-gradient(170deg, #1A1612 0%, #141010 50%, #0E0B09 100%);
 }
 
-/* Subtle warm grain texture instead of cold scanlines */
+/* Subtle warm grain texture */
 body::before {
   content: "";
   position: fixed;
@@ -92,7 +94,7 @@ body::after {
   overflow: hidden;
 }
 
-/* Warm inner border — like a frame around a portrait */
+/* Warm inner border */
 .frame::after {
   content: "";
   position: absolute;
@@ -114,72 +116,83 @@ body::after {
 
 .topbar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
   border-bottom: 1px solid rgba(212, 148, 58, 0.1);
 }
 
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 2px 8px rgba(232, 115, 58, 0.3));
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.08) rotate(-3deg);
+}
+
 .eyebrow {
-  margin: 0 0 6px;
+  margin: 0 0 2px;
   text-transform: uppercase;
   letter-spacing: 0.22em;
   color: var(--kai-tan);
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 500;
 }
 
 h1 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 2.8rem);
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--kai-cream);
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  line-height: 1;
 }
 
-/* Shiba ear accent on the title */
-h1::before {
-  content: "🦊";
-  font-size: 0.8em;
-  filter: saturate(1.2);
-}
-
-/* Status indicator lights — warm amber/orange */
-.lights {
+/* Status indicator lights */
+.status-lights {
   display: flex;
   gap: 8px;
-  padding-top: 16px;
   align-items: center;
 }
 
-.lights span {
+.light {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.light.active {
   background: var(--kai-orange);
   box-shadow: 0 0 12px var(--kai-glow);
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
-.lights span:nth-child(2) {
+.light.warm {
   background: var(--kai-amber);
-  box-shadow: 0 0 12px rgba(212, 148, 58, 0.5);
-  animation-delay: 0.5s;
+  box-shadow: 0 0 12px var(--kai-amber-glow);
+  animation: pulse-glow 3s ease-in-out 0.5s infinite;
 }
 
-.lights span:nth-child(3) {
+.light.cool {
   background: var(--kai-chest);
   box-shadow: 0 0 12px rgba(245, 230, 208, 0.3);
-  animation-delay: 1s;
+  animation: pulse-glow 3s ease-in-out 1s infinite;
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
 
 /* ─── Status Cards ─── */
@@ -195,16 +208,17 @@ h1::before {
   border: 1px solid var(--line);
   background: linear-gradient(135deg, rgba(58, 48, 40, 0.5), rgba(42, 34, 24, 0.4));
   border-radius: 10px;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .status-card:hover {
   border-color: var(--line-bright);
+  box-shadow: 0 2px 12px var(--kai-fur-shadow);
 }
 
 .status-label {
   display: block;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--kai-tan);
@@ -217,6 +231,11 @@ h1::before {
   font-weight: 600;
   font-size: 0.88rem;
 }
+
+/* Mood indicator colors */
+.mood-alert { color: var(--kai-orange) !important; }
+.mood-calm { color: var(--kai-chest) !important; }
+.mood-thinking { color: var(--kai-amber) !important; }
 
 /* ─── Messages ─── */
 
@@ -259,39 +278,77 @@ h1::before {
   border-radius: 14px;
   background: rgba(42, 34, 24, 0.6);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  animation: message-in 0.3s ease-out;
+  animation: message-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
 }
 
 @keyframes message-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .message.assistant {
-  border-color: rgba(212, 148, 58, 0.15);
-  background: linear-gradient(135deg, rgba(42, 34, 24, 0.7), rgba(58, 48, 40, 0.4));
+  border-color: rgba(212, 148, 58, 0.12);
+  background: linear-gradient(135deg, rgba(42, 34, 24, 0.7), rgba(58, 48, 40, 0.35));
+}
+
+/* Slight "ear" accent on Kai's messages */
+.message.assistant::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 16px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, rgba(42, 34, 24, 0.7), rgba(58, 48, 40, 0.35));
+  border-left: 1px solid rgba(212, 148, 58, 0.12);
+  border-bottom: 1px solid rgba(212, 148, 58, 0.12);
+  transform: rotate(45deg);
+  border-radius: 0 0 0 3px;
 }
 
 .message.user {
   align-self: flex-end;
-  border-color: rgba(232, 115, 58, 0.25);
-  background: linear-gradient(135deg, rgba(232, 115, 58, 0.15), rgba(212, 148, 58, 0.1));
+  border-color: rgba(232, 115, 58, 0.2);
+  background: linear-gradient(135deg, rgba(232, 115, 58, 0.12), rgba(212, 148, 58, 0.08));
+}
+
+.message.user::before {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 16px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, rgba(232, 115, 58, 0.12), rgba(212, 148, 58, 0.08));
+  border-right: 1px solid rgba(232, 115, 58, 0.2);
+  border-bottom: 1px solid rgba(232, 115, 58, 0.2);
+  transform: rotate(45deg);
+  border-radius: 0 0 3px 0;
 }
 
 .tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-bottom: 6px;
-  letter-spacing: 0.14em;
-  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  font-size: 0.62rem;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.paw-icon {
+  width: 12px;
+  height: 12px;
 }
 
 .message.assistant .tag {
@@ -299,17 +356,48 @@ h1::before {
   background: rgba(232, 115, 58, 0.1);
 }
 
+.message.assistant .paw-icon {
+  color: var(--kai-orange);
+}
+
 .message.user .tag {
   color: var(--kai-chest);
-  background: rgba(245, 230, 208, 0.1);
+  background: rgba(245, 230, 208, 0.08);
 }
 
 .message p {
   margin: 0;
   white-space: pre-wrap;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--kai-chest);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+}
+
+/* Thinking / typing indicator */
+.message.thinking {
+  animation: message-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.thinking-dots {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.thinking-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--kai-orange);
+  animation: dot-bounce 1.2s ease-in-out infinite;
+}
+
+.thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes dot-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
 }
 
 /* ─── Quick Actions ─── */
@@ -322,14 +410,17 @@ h1::before {
 
 .quick-actions button,
 #sendButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--line);
   color: var(--kai-cream);
-  background: linear-gradient(135deg, rgba(58, 48, 40, 0.6), rgba(42, 34, 24, 0.8));
-  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(58, 48, 40, 0.5), rgba(42, 34, 24, 0.7));
+  padding: 10px 14px;
   border-radius: 10px;
   font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   font: inherit;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -337,26 +428,28 @@ h1::before {
   overflow: hidden;
 }
 
-.quick-actions button::before,
-#sendButton::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(232, 115, 58, 0.1), transparent);
-  opacity: 0;
+.btn-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
   transition: opacity 0.2s ease;
 }
 
 .quick-actions button:hover,
 #sendButton:hover {
   border-color: var(--kai-orange);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px var(--kai-fur-shadow);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px var(--kai-fur-shadow);
 }
 
-.quick-actions button:hover::before,
-#sendButton:hover::before {
+.quick-actions button:hover .btn-icon,
+#sendButton:hover .btn-icon {
   opacity: 1;
+}
+
+.quick-actions button:active,
+#sendButton:active {
+  transform: translateY(0);
 }
 
 /* ─── Composer ─── */
@@ -373,7 +466,7 @@ h1::before {
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   color: var(--kai-tan);
   font-weight: 600;
 }
@@ -392,49 +485,64 @@ textarea {
   padding: 12px 14px;
   color: var(--kai-cream);
   background: rgba(14, 11, 9, 0.95);
-  font: inherit;
-  font-size: 0.92rem;
+  font-family: inherit;
+  font-size: 0.9rem;
   border-radius: 10px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  line-height: 1.5;
 }
 
 textarea::placeholder {
   color: var(--kai-tan);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 textarea:focus {
   outline: none;
   border-color: var(--kai-orange);
-  box-shadow: 0 0 0 3px rgba(232, 115, 58, 0.12);
-}
-
-textarea:focus + #sendButton,
-#sendButton:focus {
-  border-color: var(--kai-orange);
+  box-shadow: 0 0 0 3px rgba(232, 115, 58, 0.1);
 }
 
 #sendButton {
   align-self: end;
-  background: linear-gradient(135deg, var(--kai-orange), #C4622B);
+  background: linear-gradient(135deg, var(--kai-orange), var(--kai-orange-dim));
   color: var(--kai-warm-white);
   border-color: transparent;
   font-weight: 700;
-  padding: 12px 24px;
+  padding: 12px 20px;
   border-radius: 10px;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
+}
+
+.send-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+#sendButton:hover .send-icon {
+  transform: translateX(3px);
 }
 
 #sendButton:hover {
-  box-shadow: 0 4px 20px rgba(232, 115, 58, 0.3);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 24px rgba(232, 115, 58, 0.3);
 }
 
 #sendButton:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ─── Empty state paw prints ─── */
+.messages:empty::after {
+  content: "🐾";
+  display: block;
+  text-align: center;
+  font-size: 2rem;
+  opacity: 0.15;
+  margin-top: 40%;
 }
 
 /* ─── Responsive ─── */
@@ -455,7 +563,17 @@ textarea:focus + #sendButton,
     max-width: 100%;
   }
 
+  .message.assistant::before,
+  .message.user::before {
+    display: none;
+  }
+
   h1 {
     font-size: 1.8rem;
+  }
+
+  .logo {
+    width: 40px;
+    height: 40px;
   }
 }

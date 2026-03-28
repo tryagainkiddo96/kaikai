@@ -6,21 +6,25 @@
     <title>Kai — Your Companion</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" href="./kai-logo.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="shell">
       <section class="frame">
         <header class="topbar">
-          <div>
-            <p class="eyebrow">Personal AI Companion</p>
-            <h1>Kai</h1>
+          <div class="logo-group">
+            <img src="./kai-logo.svg" alt="Kai" class="logo" />
+            <div>
+              <p class="eyebrow">Personal AI Companion</p>
+              <h1>Kai</h1>
+            </div>
           </div>
-          <div class="lights" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
+          <div class="status-lights" aria-hidden="true">
+            <span class="light active"></span>
+            <span class="light warm"></span>
+            <span class="light cool"></span>
           </div>
         </header>
 
@@ -35,22 +39,37 @@
           </div>
           <div class="status-card">
             <span class="status-label">Mood</span>
-            <strong>Attentive</strong>
+            <strong id="moodLabel">Attentive</strong>
           </div>
         </section>
 
         <section id="messages" class="messages" aria-live="polite">
           <article class="message assistant">
-            <span class="tag">KAI</span>
+            <span class="tag">
+              <svg class="paw-icon" viewBox="0 0 40 40"><use href="./paw.svg#paw"/></svg>
+              KAI
+            </span>
             <p>I'm here. Ask me anything — commands, troubleshooting, or just talk.</p>
           </article>
         </section>
 
         <section class="quick-actions">
-          <button data-prompt="How do I check listening ports on Kali?">🔍 Ports</button>
-          <button data-prompt="Explain how to safely update Kali packages.">📦 Update</button>
-          <button data-prompt="Read my screen and summarize what matters.">👁 Screen</button>
-          <button data-prompt="What should I check when a service fails to start?">🔧 Services</button>
+          <button data-prompt="How do I check listening ports on Kali?">
+            <svg class="btn-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Ports
+          </button>
+          <button data-prompt="Explain how to safely update Kali packages.">
+            <svg class="btn-icon" viewBox="0 0 16 16"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M3 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Update
+          </button>
+          <button data-prompt="Read my screen and summarize what matters.">
+            <svg class="btn-icon" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 15h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Screen
+          </button>
+          <button data-prompt="What should I check when a service fails to start?">
+            <svg class="btn-icon" viewBox="0 0 16 16"><path d="M6 2L3 8h6L6 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/><circle cx="8" cy="11" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+            Services
+          </button>
         </section>
 
         <form id="chatForm" class="composer">
@@ -62,7 +81,10 @@
               rows="3"
               placeholder="What's on your mind?"
             ></textarea>
-            <button id="sendButton" type="submit">Send</button>
+            <button id="sendButton" type="submit">
+              Send
+              <svg class="send-icon" viewBox="0 0 16 16"><path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </button>
           </div>
         </form>
       </section>

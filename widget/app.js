@@ -3,14 +3,30 @@ const formEl = document.querySelector("#chatForm");
 const inputEl = document.querySelector("#promptInput");
 const sendButtonEl = document.querySelector("#sendButton");
 const healthLabelEl = document.querySelector("#healthLabel");
+const moodLabelEl = document.querySelector("#moodLabel");
 
+// ─── Mood System ───
+const moods = {
+  idle: { label: "Attentive", class: "mood-calm" },
+  thinking: { label: "Thinking...", class: "mood-thinking" },
+  responding: { label: "Engaged", class: "mood-alert" },
+  error: { label: "Concerned", class: "mood-alert" },
+};
+
+function setMood(state) {
+  const mood = moods[state] || moods.idle;
+  moodLabelEl.textContent = mood.label;
+  moodLabelEl.className = mood.class;
+}
+
+// ─── Messages ───
 function appendMessage(role, text) {
   const article = document.createElement("article");
   article.className = `message ${role}`;
 
   const tag = document.createElement("span");
   tag.className = "tag";
-  tag.textContent = role === "user" ? "YOU" : "KAI";
+  tag.innerHTML = role === "user" ? "YOU" : `<svg class="paw-icon" viewBox="0 0 40 40" style="width:12px;height:12px;color:currentColor"><ellipse cx="20" cy="26" rx="8" ry="7" fill="currentColor"/><ellipse cx="11" cy="15" rx="4.5" ry="5" fill="currentColor" transform="rotate(-15 11 15)"/><ellipse cx="20" cy="11" rx="4" ry="4.5" fill="currentColor"/><ellipse cx="29" cy="15" rx="4.5" ry="5" fill="currentColor" transform="rotate(15 29 15)"/></svg> KAI`;
 
   const body = document.createElement("p");
   body.textContent = text;
@@ -20,74 +36,82 @@ function appendMessage(role, text) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+function appendThinking() {
+  const article = document.createElement("article");
+  article.className = "message assistant thinking";
+  article.id = "thinking";
+
+  const tag = document.createElement("span");
+  tag.className = "tag";
+  tag.innerHTML = `<svg class="paw-icon" viewBox="0 0 40 40" style="width:12px;height:12px;color:currentColor"><ellipse cx="20" cy="26" rx="8" ry="7" fill="currentColor"/><ellipse cx="11" cy="15" rx="4.5" ry="5" fill="currentColor" transform="rotate(-15 11 15)"/><ellipse cx="20" cy="11" rx="4" ry="4.5" fill="currentColor"/><ellipse cx="29" cy="15" rx="4.5" ry="5" fill="currentColor" transform="rotate(15 29 15)"/></svg> KAI`;
+
+  const body = document.createElement("p");
+  body.innerHTML = `Thinking<span class="thinking-dots"><span></span><span></span><span></span></span>`;
+
+  article.append(tag, body);
+  messagesEl.append(article);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  setMood("thinking");
+}
+
+function removeThinking() {
+  const el = document.querySelector("#thinking");
+  if (el) el.remove();
+}
+
+// ─── Health Check ───
 async function pingHealth() {
   try {
     const response = await fetch("/api/health");
-    if (!response.ok) {
-      throw new Error("offline");
-    }
+    if (!response.ok) throw new Error("offline");
     healthLabelEl.textContent = "Online";
     healthLabelEl.style.color = "var(--kai-orange)";
+    setMood("idle");
   } catch {
     healthLabelEl.textContent = "Offline";
     healthLabelEl.style.color = "var(--kai-red)";
   }
 }
 
+// ─── Send ───
 async function sendPrompt(prompt) {
-  if (!prompt.trim()) {
-    return;
-  }
+  if (!prompt.trim()) return;
 
   appendMessage("user", prompt);
   inputEl.value = "";
   sendButtonEl.disabled = true;
-
-  // Thinking indicator with warm Shiba vibe
-  const thinkingArticle = document.createElement("article");
-  thinkingArticle.className = "message assistant";
-  thinkingArticle.id = "thinking";
-  const thinkingTag = document.createElement("span");
-  thinkingTag.className = "tag";
-  thinkingTag.textContent = "KAI";
-  const thinkingBody = document.createElement("p");
-  thinkingBody.textContent = "Thinking...";
-  thinkingBody.style.opacity = "0.6";
-  thinkingBody.style.fontStyle = "italic";
-  thinkingArticle.append(thinkingTag, thinkingBody);
-  messagesEl.append(thinkingArticle);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  appendThinking();
 
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: prompt }),
     });
     const payload = await response.json();
-
-    // Remove thinking indicator
-    const thinking = document.querySelector("#thinking");
-    if (thinking) thinking.remove();
+    removeThinking();
 
     if (!response.ok) {
       appendMessage("assistant", payload.error || "Connection lost. I'll try again.");
+      setMood("error");
       return;
     }
 
     appendMessage("assistant", payload.reply);
+    setMood("responding");
+    // Settle back to idle after a moment
+    setTimeout(() => setMood("idle"), 3000);
   } catch (error) {
-    const thinking = document.querySelector("#thinking");
-    if (thinking) thinking.remove();
+    removeThinking();
     appendMessage("assistant", `Lost connection: ${error.message}`);
+    setMood("error");
   } finally {
     sendButtonEl.disabled = false;
     inputEl.focus();
   }
 }
 
+// ─── Events ───
 formEl.addEventListener("submit", async (event) => {
   event.preventDefault();
   await sendPrompt(inputEl.value);
@@ -106,5 +130,6 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
   });
 });
 
+// ─── Init ───
 pingHealth();
 inputEl.focus();

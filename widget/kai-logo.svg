@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Kai - Shiba Inu head silhouette -->
+  <!-- Ears -->
+  <path d="M22 18 L38 48 L15 52 Z" fill="#E8733A"/>
+  <path d="M98 18 L82 48 L105 52 Z" fill="#E8733A"/>
+  <!-- Inner ears -->
+  <path d="M24 22 L36 46 L20 48 Z" fill="#F5E6D0"/>
+  <path d="M96 22 L84 46 L100 48 Z" fill="#F5E6D0"/>
+  <!-- Head -->
+  <ellipse cx="60" cy="62" rx="38" ry="36" fill="#E8733A"/>
+  <!-- Face markings (cream/white) -->
+  <ellipse cx="60" cy="68" rx="24" ry="26" fill="#F5E6D0"/>
+  <!-- Forehead -->
+  <path d="M40 38 Q60 28 80 38 Q78 50 60 48 Q42 50 40 38Z" fill="#F5E6D0"/>
+  <!-- Eyes -->
+  <ellipse cx="46" cy="56" rx="5" ry="5.5" fill="#1A1612"/>
+  <ellipse cx="74" cy="56" rx="5" ry="5.5" fill="#1A1612"/>
+  <!-- Eye shine -->
+  <circle cx="48" cy="54" r="1.5" fill="#FFF5E1"/>
+  <circle cx="76" cy="54" r="1.5" fill="#FFF5E1"/>
+  <!-- Nose -->
+  <ellipse cx="60" cy="68" rx="5" ry="3.5" fill="#1A1612"/>
+  <!-- Nose shine -->
+  <ellipse cx="61.5" cy="67" rx="1.5" ry="1" fill="#3A3028"/>
+  <!-- Mouth -->
+  <path d="M55 72 Q60 77 65 72" stroke="#1A1612" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M60 68 L60 72" stroke="#1A1612" stroke-width="1.2" fill="none"/>
+  <!-- Cheek tufts -->
+  <path d="M28 55 Q32 62 26 68" stroke="#E8733A" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M92 55 Q88 62 94 68" stroke="#E8733A" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>
