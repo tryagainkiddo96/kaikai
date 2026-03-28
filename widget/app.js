@@ -19,8 +19,47 @@ function setMood(state) {
   moodLabelEl.className = mood.class;
 }
 
-// ─── Messages ───
-function appendMessage(role, text) {
+// ─── Message Persistence ───
+const STORAGE_KEY = 'kai_chat_history';
+const MAX_STORED = 50;
+
+function saveMessages() {
+  const messages = messagesEl.querySelectorAll('.message:not(.thinking)');
+  const history = [];
+  messages.forEach(msg => {
+    const role = msg.classList.contains('user') ? 'user' : 'assistant';
+    const text = msg.querySelector('p')?.textContent || '';
+    if (text && text !== 'Thinking...') {
+      history.push({ role, text });
+    }
+  });
+  // Keep last MAX_STORED messages
+  const trimmed = history.slice(-MAX_STORED);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+  } catch (e) {
+    // Storage full or unavailable — silently skip
+  }
+}
+
+function loadMessages() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const history = JSON.parse(raw);
+    if (!Array.isArray(history) || history.length === 0) return false;
+    // Clear the default welcome message
+    messagesEl.innerHTML = '';
+    history.forEach(({ role, text }) => {
+      appendMessageNoSave(role, text);
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function appendMessageNoSave(role, text) {
   const article = document.createElement("article");
   article.className = `message ${role}`;
 
@@ -34,6 +73,12 @@ function appendMessage(role, text) {
   article.append(tag, body);
   messagesEl.append(article);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+// ─── Messages ───
+function appendMessage(role, text) {
+  appendMessageNoSave(role, text);
+  saveMessages();
 }
 
 function appendThinking() {
@@ -131,6 +176,7 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
 });
 
 // ─── Init ───
+const hadHistory = loadMessages();
 pingHealth();
 inputEl.focus();
 
@@ -138,5 +184,5 @@ inputEl.focus();
 window.addEventListener('load', () => {
   setTimeout(() => {
     document.getElementById('loadingSplash')?.classList.add('hidden');
-  }, 600);
+  }, hadHistory ? 300 : 600);
 });
