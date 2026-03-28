@@ -12,19 +12,19 @@ from tkinter import scrolledtext, ttk
 
 from kai_agent.assistant import KaiAssistant
 
-
-BG = "#080812"
-PANEL = "#14111f"
-PANEL_ALT = "#1d1730"
-LINE = "#5a4d7d"
-TEXT = "#ddd7ef"
-TEXT_DIM = "#9d94b8"
-TEXT_BRIGHT = "#fffafc"
-ACCENT = "#f26bb6"
-WARN = "#88f1ff"
-USER_TEXT = "#ffb8e0"
-KAI_TEXT = "#f7efff"
-SYSTEM_TEXT = "#9bf8ff"
+# Shiba Inu warm palette — fox tones, cream, charcoal
+BG = "#1A1612"
+PANEL = "#2A2218"
+PANEL_ALT = "#3A3028"
+LINE = "#6B5A3D"  # warm amber border
+TEXT = "#F5E6D0"
+TEXT_DIM = "#8B7355"
+TEXT_BRIGHT = "#FFF5E1"
+ACCENT = "#E8733A"
+WARN = "#E8C547"
+USER_TEXT = "#E8733A"
+KAI_TEXT = "#FFF5E1"
+SYSTEM_TEXT = "#D4943A"
 WINDOW_REFRESH_MS = 4000
 WINDOW_CONTEXT_TTL_SEC = 20.0
 
@@ -282,7 +282,7 @@ class KaiPanelUnified:
         self.messages = scrolledtext.ScrolledText(
             chat_card,
             wrap="word",
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -304,7 +304,7 @@ class KaiPanelUnified:
         self.input = tk.Text(
             input_row,
             height=3,
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT_BRIGHT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -317,10 +317,10 @@ class KaiPanelUnified:
             input_row,
             text="Send",
             command=self._submit_prompt,
-            fg="#12091a",
+            fg="#1A1612",
             bg=ACCENT,
-            activebackground="#ff9ddb",
-            activeforeground="#12091a",
+            activebackground="#E8733A",
+            activeforeground="#1A1612",
             relief="flat",
             font=("Segoe UI", 10, "bold"),
             padx=12,
@@ -360,10 +360,10 @@ class KaiPanelUnified:
 
         row = tk.Frame(task_card, bg=PANEL_ALT)
         row.pack(fill="x", padx=12, pady=(0, 10))
-        self.task_input = tk.Entry(row, bg="#100d1d", fg=TEXT_BRIGHT, insertbackground=TEXT_BRIGHT, relief="flat", font=("Cascadia Code", 10))
+        self.task_input = tk.Entry(row, bg="#1E1A15", fg=TEXT_BRIGHT, insertbackground=TEXT_BRIGHT, relief="flat", font=("Cascadia Code", 10))
         self.task_input.pack(side="left", fill="x", expand=True, padx=(0, 8), ipady=6)
         self.task_input.bind("<Return>", self._handle_task_add_enter)
-        tk.Button(row, text="Add Task", command=self._submit_task_add, fg="#12091a", bg=ACCENT, activebackground="#ff8bce", activeforeground="#12091a", relief="flat", padx=10, pady=6).pack(side="left", padx=(0, 6))
+        tk.Button(row, text="Add Task", command=self._submit_task_add, fg="#1A1612", bg=ACCENT, activebackground="#C4622B", activeforeground="#1A1612", relief="flat", padx=10, pady=6).pack(side="left", padx=(0, 6))
         tk.Button(row, text="Done Active", command=self._complete_active_task, fg=TEXT_BRIGHT, bg=PANEL, activebackground=LINE, activeforeground=TEXT_BRIGHT, relief="flat", padx=10, pady=6).pack(side="left", padx=(0, 6))
         tk.Button(row, text="Refresh", command=lambda: self._submit_prompt("show tasks"), fg=TEXT_BRIGHT, bg=PANEL, activebackground=LINE, activeforeground=TEXT_BRIGHT, relief="flat", padx=10, pady=6).pack(side="left")
 
@@ -389,7 +389,7 @@ class KaiPanelUnified:
             actions,
             wrap="word",
             height=20,
-            bg="#0c0916",
+            bg="#141010",
             fg=SYSTEM_TEXT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -404,12 +404,12 @@ class KaiPanelUnified:
 
         shell_bar = tk.Frame(actions, bg=PANEL_ALT)
         shell_bar.pack(fill="x", padx=12, pady=(0, 10))
-        self.kali_input = tk.Entry(shell_bar, bg="#100d1d", fg=TEXT_BRIGHT, insertbackground=TEXT_BRIGHT, relief="flat", font=("Cascadia Code", 10))
+        self.kali_input = tk.Entry(shell_bar, bg="#1E1A15", fg=TEXT_BRIGHT, insertbackground=TEXT_BRIGHT, relief="flat", font=("Cascadia Code", 10))
         self.kali_input.pack(side="left", fill="x", expand=True, padx=(0, 8), ipady=6)
         self.kali_input.bind("<Return>", self._handle_kali_enter)
         self.kali_input.bind("<Up>", self._handle_kali_history_up)
         self.kali_input.bind("<Down>", self._handle_kali_history_down)
-        self.kali_run_button = tk.Button(shell_bar, text="Run", command=self._submit_kali_command, fg="#12091a", bg=WARN, activebackground="#acf7ff", activeforeground="#12091a", relief="flat", padx=12, pady=6)
+        self.kali_run_button = tk.Button(shell_bar, text="Run", command=self._submit_kali_command, fg="#1A1612", bg=WARN, activebackground="#F0D878", activeforeground="#1A1612", relief="flat", padx=12, pady=6)
         self.kali_run_button.pack(side="left")
 
     def _build_tools_tab(self, parent: tk.Frame) -> None:

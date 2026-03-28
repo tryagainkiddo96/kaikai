@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kai Pip-Boy Widget</title>
+    <title>Kai — Your Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -11,8 +14,8 @@
       <section class="frame">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Vault-Tec Personal Assistant Interface</p>
-            <h1>Kai Communicator</h1>
+            <p class="eyebrow">Personal AI Companion</p>
+            <h1>Kai</h1>
           </div>
           <div class="lights" aria-hidden="true">
             <span></span>
@@ -28,36 +31,36 @@
           </div>
           <div class="status-card">
             <span class="status-label">Mode</span>
-            <strong>Field Ops Chat</strong>
+            <strong>Companion Chat</strong>
           </div>
           <div class="status-card">
-            <span class="status-label">Tone</span>
-            <strong>Warm / Practical</strong>
+            <span class="status-label">Mood</span>
+            <strong>Attentive</strong>
           </div>
         </section>
 
         <section id="messages" class="messages" aria-live="polite">
           <article class="message assistant">
             <span class="tag">KAI</span>
-            <p>Signal acquired. Ask for commands, troubleshooting, or a fast explanation.</p>
+            <p>I'm here. Ask me anything — commands, troubleshooting, or just talk.</p>
           </article>
         </section>
 
         <section class="quick-actions">
-          <button data-prompt="How do I check listening ports on Kali?">Ports</button>
-          <button data-prompt="Explain how to safely update Kali packages.">Update</button>
-          <button data-prompt="Read my screen and summarize what matters.">Screen</button>
-          <button data-prompt="What should I check when a service fails to start?">Services</button>
+          <button data-prompt="How do I check listening ports on Kali?">🔍 Ports</button>
+          <button data-prompt="Explain how to safely update Kali packages.">📦 Update</button>
+          <button data-prompt="Read my screen and summarize what matters.">👁 Screen</button>
+          <button data-prompt="What should I check when a service fails to start?">🔧 Services</button>
         </section>
 
         <form id="chatForm" class="composer">
-          <label class="composer-label" for="promptInput">Transmit Query</label>
+          <label class="composer-label" for="promptInput">Talk to Kai</label>
           <div class="composer-row">
             <textarea
               id="promptInput"
               name="prompt"
               rows="3"
-              placeholder="Talk to Kai naturally..."
+              placeholder="What's on your mind?"
             ></textarea>
             <button id="sendButton" type="submit">Send</button>
           </div>

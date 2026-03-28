@@ -11,19 +11,19 @@ from tkinter import scrolledtext
 
 from kai_agent.assistant import KaiAssistant
 
-
-BG = "#0b0a14"
-PANEL = "#161126"
-PANEL_ALT = "#211738"
-LINE = "#4f3b73"
-TEXT = "#d9d2ff"
-TEXT_DIM = "#9e8fcb"
-TEXT_BRIGHT = "#fff4ff"
-ACCENT = "#ff78c8"
-WARN = "#7df9ff"
-USER_TEXT = "#ffb3df"
-KAI_TEXT = "#f6ecff"
-SYSTEM_TEXT = "#8ef7ff"
+# Shiba Inu warm palette
+BG = "#1A1612"
+PANEL = "#2A2218"
+PANEL_ALT = "#3A3028"
+LINE = "#6B5A3D"
+TEXT = "#F5E6D0"
+TEXT_DIM = "#8B7355"
+TEXT_BRIGHT = "#FFF5E1"
+ACCENT = "#E8733A"
+WARN = "#E8C547"
+USER_TEXT = "#E8733A"
+KAI_TEXT = "#FFF5E1"
+SYSTEM_TEXT = "#D4943A"
 WINDOW_REFRESH_MS = 4000
 
 
@@ -124,7 +124,7 @@ class KaiPanel:
             command=self._toggle_window_link,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -140,7 +140,7 @@ class KaiPanel:
             command=lambda: self._dock("left"),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 9, "bold"),
@@ -156,7 +156,7 @@ class KaiPanel:
             command=lambda: self._dock("right"),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 9, "bold"),
@@ -172,7 +172,7 @@ class KaiPanel:
             command=self._clear_messages,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -203,7 +203,7 @@ class KaiPanel:
             command=self._set_opacity,
             bg=PANEL,
             fg=TEXT_BRIGHT,
-            troughcolor="#0e0a19",
+            troughcolor="#141010",
             activebackground=ACCENT,
             highlightthickness=0,
             length=180,
@@ -213,7 +213,7 @@ class KaiPanel:
         self.messages = scrolledtext.ScrolledText(
             frame,
             wrap="word",
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -242,7 +242,7 @@ class KaiPanel:
             command=self._connect_kali_session,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -256,7 +256,7 @@ class KaiPanel:
             command=self._clear_kali_feed,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -269,7 +269,7 @@ class KaiPanel:
             terminal_frame,
             wrap="word",
             height=10,
-            bg="#0c0916",
+            bg="#141010",
             fg=SYSTEM_TEXT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -299,7 +299,7 @@ class KaiPanel:
 
         self.kali_input = tk.Entry(
             shell_bar,
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT_BRIGHT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -315,10 +315,10 @@ class KaiPanel:
             shell_bar,
             text="RUN",
             command=self._submit_kali_command,
-            fg="#12091a",
+            fg="#1A1612",
             bg=WARN,
-            activebackground="#a2fbff",
-            activeforeground="#12091a",
+            activebackground="#F0D878",
+            activeforeground="#1A1612",
             relief="flat",
             font=("Segoe UI", 9, "bold"),
             padx=10,
@@ -331,7 +331,7 @@ class KaiPanel:
             command=lambda: self._submit_kali_command("pwd"),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -346,7 +346,7 @@ class KaiPanel:
             command=self._reset_kali_session,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -463,7 +463,7 @@ class KaiPanel:
             command=lambda: self._submit_prompt("show tasks"),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -488,7 +488,7 @@ class KaiPanel:
 
         self.task_input = tk.Entry(
             task_bar,
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT_BRIGHT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -501,10 +501,10 @@ class KaiPanel:
             task_bar,
             text="ADD TASK",
             command=self._submit_task_add,
-            fg="#12091a",
+            fg="#1A1612",
             bg=ACCENT,
-            activebackground="#ff9ddb",
-            activeforeground="#12091a",
+            activebackground="#E8733A",
+            activeforeground="#1A1612",
             relief="flat",
             font=("Segoe UI", 9, "bold"),
             padx=10,
@@ -517,7 +517,7 @@ class KaiPanel:
             command=self._complete_active_task,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -546,7 +546,7 @@ class KaiPanel:
             command=lambda: self._submit_prompt("show playbooks"),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -573,10 +573,10 @@ class KaiPanel:
             playbooks_bar,
             text="GARAK",
             command=lambda: self._seed_prompt("triage garak results: "),
-            fg="#12091a",
+            fg="#1A1612",
             bg=WARN,
-            activebackground="#a2fbff",
-            activeforeground="#12091a",
+            activebackground="#F0D878",
+            activeforeground="#1A1612",
             relief="flat",
             font=("Segoe UI", 8, "bold"),
             padx=10,
@@ -589,7 +589,7 @@ class KaiPanel:
             command=lambda: self._seed_prompt("setup pyrit: "),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -604,7 +604,7 @@ class KaiPanel:
             command=lambda: self._seed_prompt("summarize art findings: "),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -622,7 +622,7 @@ class KaiPanel:
             command=self._open_kali_terminal,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -638,7 +638,7 @@ class KaiPanel:
             command=self._open_kali_here,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -654,7 +654,7 @@ class KaiPanel:
             command=self._open_workspace,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -670,7 +670,7 @@ class KaiPanel:
             command=self._open_logs,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -689,7 +689,7 @@ class KaiPanel:
             command=lambda: self._submit_prompt("run this project in ."),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -705,7 +705,7 @@ class KaiPanel:
             command=lambda: self._submit_prompt("run tests in ."),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -721,7 +721,7 @@ class KaiPanel:
             command=lambda: self._seed_prompt("kali: "),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -737,7 +737,7 @@ class KaiPanel:
             command=lambda: self._seed_prompt("kali run: "),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -763,7 +763,7 @@ class KaiPanel:
             compose,
             height=4,
             wrap="word",
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT_BRIGHT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -780,10 +780,10 @@ class KaiPanel:
             compose,
             text="SEND",
             command=self._submit_prompt,
-            fg="#12091a",
+            fg="#1A1612",
             bg=ACCENT,
-            activebackground="#ff9ddb",
-            activeforeground="#12091a",
+            activebackground="#E8733A",
+            activeforeground="#1A1612",
             relief="flat",
             font=("Segoe UI", 11, "bold"),
             padx=12,
