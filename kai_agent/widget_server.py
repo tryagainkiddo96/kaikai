@@ -19,6 +19,8 @@ STATIC_FILES = {
     "/index.html": ("index.html", "text/html; charset=utf-8"),
     "/styles.css": ("styles.css", "text/css; charset=utf-8"),
     "/app.js": ("app.js", "application/javascript; charset=utf-8"),
+    "/kai-logo.svg": ("kai-logo.svg", "image/svg+xml"),
+    "/paw.svg": ("paw.svg", "image/svg+xml"),
 }
 
 
@@ -115,7 +117,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Kai Pip-Boy widget server")
+    parser = argparse.ArgumentParser(description="Kai companion widget server")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8127)
     parser.add_argument("--model", default="qwen3:4b-q4_K_M")

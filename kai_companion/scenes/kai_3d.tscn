@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/kai_3d.gd" id="1_script"]
+[ext_resource type="Theme" path="res://assets/kai/kai_theme.tres" id="2_theme"]
 
 [node name="Kai3D" type="Node"]
 script = ExtResource("1_script")
@@ -32,24 +33,28 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
+theme = ExtResource("2_theme")
 
 [node name="Bubble" type="PanelContainer" parent="UI/Root"]
 offset_left = 12.0
 offset_top = 12.0
-offset_right = 252.0
-offset_bottom = 92.0
+offset_right = 262.0
+offset_bottom = 82.0
 mouse_filter = 2
 
 [node name="PanelToggleButton" type="Button" parent="UI/Root"]
-offset_left = 264.0
+offset_left = 274.0
 offset_top = 12.0
-offset_right = 328.0
+offset_right = 338.0
 offset_bottom = 42.0
 text = "Chat"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+theme_override_colors/font_hover_color = Color(1.0, 0.961, 0.882, 1.0)
 
 [node name="BubbleLabel" type="Label" parent="UI/Root/Bubble"]
-custom_minimum_size = Vector2(210, 0)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.961, 0.902, 0.816, 1.0)
 theme_override_font_sizes/font_size = 16
 text = "Kai booting up..."
 autowrap_mode = 3
@@ -75,6 +80,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 bbcode_enabled = true
+theme_override_colors/default_color = Color(0.961, 0.902, 0.816, 1.0)
 
 [node name="InputRow" type="HBoxContainer" parent="UI/Root/ChatPanel/Margin/VBox"]
 layout_mode = 2
@@ -83,10 +89,13 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Chat with Kai..."
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+theme_override_colors/font_placeholder_color = Color(0.545, 0.451, 0.333, 0.6)
 
 [node name="SendButton" type="Button" parent="UI/Root/ChatPanel/Margin/VBox/InputRow"]
 layout_mode = 2
 text = "Send"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
 
 [node name="HTTPRequest" type="HTTPRequest" parent="UI/Root"]
 

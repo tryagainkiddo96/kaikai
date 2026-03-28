@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/kai.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/kai/kai_photo_clean.png" id="2_idle"]
 [ext_resource type="Texture2D" path="res://assets/kai/kai_alert_pose.png" id="3_alert"]
 [ext_resource type="Texture2D" path="res://assets/kai/kai_bark_pose.png" id="4_bark"]
 [ext_resource type="Texture2D" path="res://assets/kai/kai_lie_down_clean.png" id="5_rest"]
+[ext_resource type="Theme" path="res://assets/kai/kai_theme.tres" id="6_theme"]
 
 [node name="Kai" type="Control"]
 layout_mode = 3
@@ -14,6 +15,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
+theme = ExtResource("6_theme")
 script = ExtResource("1_script")
 
 [node name="AvatarShadow" type="TextureRect" parent="."]
@@ -41,20 +43,23 @@ mouse_filter = 2
 [node name="Bubble" type="PanelContainer" parent="."]
 offset_left = 12.0
 offset_top = 12.0
-offset_right = 252.0
-offset_bottom = 92.0
+offset_right = 262.0
+offset_bottom = 82.0
 mouse_filter = 2
 
 [node name="PanelToggleButton" type="Button" parent="."]
-offset_left = 264.0
+offset_left = 274.0
 offset_top = 12.0
-offset_right = 328.0
+offset_right = 338.0
 offset_bottom = 42.0
 text = "Chat"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+theme_override_colors/font_hover_color = Color(1.0, 0.961, 0.882, 1.0)
 
 [node name="BubbleLabel" type="Label" parent="Bubble"]
-custom_minimum_size = Vector2(210, 0)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.961, 0.902, 0.816, 1.0)
 theme_override_font_sizes/font_size = 16
 text = "Kai booting up..."
 autowrap_mode = 3
@@ -80,6 +85,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 bbcode_enabled = true
+theme_override_colors/default_color = Color(0.961, 0.902, 0.816, 1.0)
 
 [node name="InputRow" type="HBoxContainer" parent="ChatPanel/Margin/VBox"]
 layout_mode = 2
@@ -88,10 +94,13 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Chat with Kai..."
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+theme_override_colors/font_placeholder_color = Color(0.545, 0.451, 0.333, 0.6)
 
 [node name="SendButton" type="Button" parent="ChatPanel/Margin/VBox/InputRow"]
 layout_mode = 2
 text = "Send"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
 
 [node name="HTTPRequest" type="HTTPRequest" parent="."]
 
