@@ -372,6 +372,16 @@ h1 {
   font-size: 0.9rem;
 }
 
+/* Timestamps */
+.msg-time {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.6rem;
+  color: var(--kai-tan);
+  opacity: 0.5;
+  letter-spacing: 0.05em;
+}
+
 /* Thinking / typing indicator */
 .message.thinking {
   animation: message-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);

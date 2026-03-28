@@ -70,7 +70,11 @@ function appendMessageNoSave(role, text) {
   const body = document.createElement("p");
   body.textContent = text;
 
-  article.append(tag, body);
+  const time = document.createElement("span");
+  time.className = "msg-time";
+  time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  article.append(tag, body, time);
   messagesEl.append(article);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -105,6 +109,8 @@ function removeThinking() {
 }
 
 // ─── Health Check ───
+let healthCheckInterval = null;
+
 async function pingHealth() {
   try {
     const response = await fetch("/api/health");
@@ -112,9 +118,19 @@ async function pingHealth() {
     healthLabelEl.textContent = "Online";
     healthLabelEl.style.color = "var(--kai-rust)";
     setMood("idle");
+    // Switch to slower polling when online
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+      healthCheckInterval = setInterval(pingHealth, 30000);
+    }
   } catch {
-    healthLabelEl.textContent = "Offline";
+    healthLabelEl.textContent = "Reconnecting...";
     healthLabelEl.style.color = "var(--kai-red)";
+    // Fast poll when offline
+    if (!healthCheckInterval || healthCheckInterval._slow) {
+      if (healthCheckInterval) clearInterval(healthCheckInterval);
+      healthCheckInterval = setInterval(pingHealth, 3000);
+    }
   }
 }
 
@@ -178,6 +194,7 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
 // ─── Init ───
 const hadHistory = loadMessages();
 pingHealth();
+healthCheckInterval = setInterval(pingHealth, 30000);
 inputEl.focus();
 
 // Hide loading splash
