@@ -65,7 +65,7 @@ async function pingHealth() {
     const response = await fetch("/api/health");
     if (!response.ok) throw new Error("offline");
     healthLabelEl.textContent = "Online";
-    healthLabelEl.style.color = "var(--kai-orange)";
+    healthLabelEl.style.color = "var(--kai-rust)";
     setMood("idle");
   } catch {
     healthLabelEl.textContent = "Offline";
