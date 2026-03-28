@@ -92,8 +92,8 @@ class KaiPanelUnified:
         except Exception:
             pass
         style.configure("KaiDeck.TNotebook", background=PANEL, borderwidth=0)
-        style.configure("KaiDeck.TNotebook.Tab", background=PANEL_ALT, foreground=TEXT, padding=(14, 8), borderwidth=0)
-        style.map("KaiDeck.TNotebook.Tab", background=[("selected", LINE)], foreground=[("selected", TEXT_BRIGHT)])
+        style.configure("KaiDeck.TNotebook.Tab", background=PANEL_ALT, foreground=TEXT_DIM, padding=(16, 10), borderwidth=0, font=("Inter", 10))
+        style.map("KaiDeck.TNotebook.Tab", background=[("selected", ACCENT)], foreground=[("selected", TEXT_BRIGHT)])
 
         frame = tk.Frame(self.root, bg=PANEL, highlightbackground=LINE, highlightthickness=1)
         frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -105,17 +105,17 @@ class KaiPanelUnified:
 
         tk.Label(
             titlebar,
-            text="KAI COMMAND DECK",
-            fg=TEXT_BRIGHT,
+            text="🦊 KAI",
+            fg=ACCENT,
             bg=PANEL_ALT,
-            font=("Segoe UI Semibold", 17, "bold"),
+            font=("Segoe UI Semibold", 20, "bold"),
         ).pack(anchor="w", padx=12, pady=(10, 0))
         tk.Label(
             titlebar,
-            text=f"MODEL: {self.model_label}  |  CHAT, EXECUTION, STATE",
+            text=f"{self.model_label}  ·  companion chat · execution · state",
             fg=TEXT_DIM,
             bg=PANEL_ALT,
-            font=("Cascadia Code", 9, "bold"),
+            font=("Inter", 9),
         ).pack(anchor="w", padx=12, pady=(0, 10))
 
         top_row = tk.Frame(frame, bg=PANEL)

@@ -74,10 +74,10 @@ class KaiPanel:
 
         title = tk.Label(
             titlebar,
-            text="KAI NEXUS",
-            fg=TEXT_BRIGHT,
+            text="🦊 KAI",
+            fg=ACCENT,
             bg=PANEL_ALT,
-            font=("Segoe UI Semibold", 18, "bold"),
+            font=("Segoe UI Semibold", 20, "bold"),
         )
         title.pack(anchor="w", padx=12, pady=(10, 0))
         title.bind("<ButtonPress-1>", self._start_drag)
@@ -85,10 +85,10 @@ class KaiPanel:
 
         subtitle = tk.Label(
             titlebar,
-            text="NEON OPS CHAT INTERFACE",
+            text="companion chat · local assistant",
             fg=TEXT_DIM,
             bg=PANEL_ALT,
-            font=("Segoe UI", 8, "bold"),
+            font=("Inter", 9),
         )
         subtitle.pack(anchor="w", padx=12, pady=(0, 10))
         subtitle.bind("<ButtonPress-1>", self._start_drag)
