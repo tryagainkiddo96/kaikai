@@ -21,6 +21,7 @@ STATIC_FILES = {
     "/app.js": ("app.js", "application/javascript; charset=utf-8"),
     "/kai-logo.svg": ("kai-logo.svg", "image/svg+xml"),
     "/paw.svg": ("paw.svg", "image/svg+xml"),
+    "/favicon.svg": ("favicon.svg", "image/svg+xml"),
 }
 
 
