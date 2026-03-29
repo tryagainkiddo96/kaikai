@@ -1,0 +1,85 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/hud.gd" id="1"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1")
+
+[node name="TopBar" type="Control" parent="."]
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 152.0
+
+[node name="Treats" type="Label" parent="TopBar"]
+offset_right = 420.0
+offset_bottom = 24.0
+text = "Treats: 0"
+
+[node name="Objective" type="Label" parent="TopBar"]
+offset_left = 0.0
+offset_top = 26.0
+offset_right = 1220.0
+offset_bottom = 60.0
+autowrap_mode = 2
+text = "Objective: Explore the block"
+
+[node name="Status" type="Label" parent="TopBar"]
+offset_left = 0.0
+offset_top = 54.0
+offset_right = 1380.0
+offset_bottom = 96.0
+autowrap_mode = 2
+text = "Cmd:Follow | Kai:curious | Yuki:curious | Saiya:protective | Sniff:off | Keys 1-6"
+
+[node name="SideMission" type="Label" parent="TopBar"]
+visible = false
+offset_left = 0.0
+offset_top = 98.0
+offset_right = 1380.0
+offset_bottom = 146.0
+autowrap_mode = 2
+text = "Side Mission"
+
+[node name="Hint" type="Label" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -52.0
+offset_right = -16.0
+offset_bottom = -16.0
+autowrap_mode = 2
+text = "WASD move | Shift sprint | Space jump | E bark | Q sniff | F interact"
+
+[node name="Prompt" type="Label" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -92.0
+offset_right = -16.0
+offset_bottom = -56.0
+autowrap_mode = 2
+text = ""
+
+[node name="WinBanner" type="Label" parent="."]
+visible = false
+offset_left = 420.0
+offset_top = 36.0
+offset_right = 1220.0
+offset_bottom = 96.0
+text = "HOME BLOCK HERO"
+horizontal_alignment = 1
+
+[node name="Recap" type="Label" parent="."]
+visible = false
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -420.0
+offset_top = -280.0
+offset_right = -16.0
+offset_bottom = -110.0
+autowrap_mode = 2
+text = "DAY RECAP"
