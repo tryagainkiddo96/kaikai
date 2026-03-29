@@ -5,6 +5,11 @@ const KAI_CHAT_URL := "http://127.0.0.1:8127/api/chat"
 const OLLAMA_URL := "http://127.0.0.1:11434/api/chat"
 const KAI_BARK_1_PATH := "res://assets/kai/audio/kai_bark_1.wav"
 const KAI_BARK_2_PATH := "res://assets/kai/audio/kai_bark_2.wav"
+const KAI_SNIFF_PATH := "res://assets/kai/audio/kai_sniff.wav"
+const KAI_WAG_PATH := "res://assets/kai/audio/kai_wag.wav"
+const KAI_HUFF_PATH := "res://assets/kai/audio/kai_huff.wav"
+const KAI_PAW_PATH := "res://assets/kai/audio/kai_paw.wav"
+const KAI_SIGH_PATH := "res://assets/kai/audio/kai_sigh.wav"
 const KAI_CANONICAL_MODEL_PATH := "res://assets/kai/kai_textured.glb"
 const KAI_RIG_TARGET_PATH := "res://assets/kai/kai_textured_rigged.glb"
 const KAI_MOTION_REFERENCE_PATH := "res://assets/kai/kai-lite.glb"
@@ -128,6 +133,11 @@ var _home_anchor := Vector2.ZERO
 var _recent_targets: Array[Vector2] = []
 var _guard_target := Vector2.ZERO
 var _bark_sounds: Array[AudioStream] = []
+var _sniff_sound: AudioStream
+var _wag_sound: AudioStream
+var _huff_sound: AudioStream
+var _paw_sound: AudioStream
+var _sigh_sound: AudioStream
 var _bark_cooldown := 0.0
 
 const AMBIENT_LINES := [
@@ -356,6 +366,7 @@ func _on_pet_pressed() -> void:
     _alert_hold = randf_range(0.35, 0.8)
     _set_bubble_text(PET_LINES[randi() % PET_LINES.size()], 3.0)
     _update_mood_display("Happy")
+    _play_sound(_wag_sound)
 
 
 func _on_walk_pressed() -> void:
@@ -519,6 +530,18 @@ func _load_companion_audio() -> void:
         _bark_sounds.append(bark_1)
     if bark_2 != null:
         _bark_sounds.append(bark_2)
+    _sniff_sound = _load_wav_stream(KAI_SNIFF_PATH)
+    _wag_sound = _load_wav_stream(KAI_WAG_PATH)
+    _huff_sound = _load_wav_stream(KAI_HUFF_PATH)
+    _paw_sound = _load_wav_stream(KAI_PAW_PATH)
+    _sigh_sound = _load_wav_stream(KAI_SIGH_PATH)
+
+
+func _play_sound(stream: AudioStream) -> void:
+    if stream == null or bark_player == null:
+        return
+    bark_player.stream = stream
+    bark_player.play()
 
 
 func _load_wav_stream(path: String) -> AudioStreamWAV:
@@ -924,6 +947,7 @@ func _begin_watch_post(duration_scale: float = 1.0) -> void:
 func _begin_sniff(message: String = "") -> void:
     _set_state("sniff", true)
     _walk_pause = randf_range(SNIFF_LINGER_MIN * 0.6, SNIFF_LINGER_MAX * 0.85)
+    _play_sound(_sniff_sound)
     if message.is_empty():
         _set_bubble_text(SNIFF_LINES[randi() % SNIFF_LINES.size()], 2.1)
     else:
@@ -935,6 +959,7 @@ func _begin_bark(message: String = "") -> void:
     _alert_hold = randf_range(ALERT_HOLD_MIN, ALERT_HOLD_MAX)
     _watch_post_timer = randf_range(WATCH_POST_HOLD_MIN * 0.4, WATCH_POST_HOLD_MAX * 0.55)
     _play_bark()
+    _play_sound(_huff_sound)
     if message.is_empty():
         _set_bubble_text(BARK_LINES[randi() % BARK_LINES.size()], 1.9)
     else:
@@ -992,6 +1017,7 @@ func _settle_after_walk() -> void:
     if randf() < 0.22:
         _set_state("rest")
         _rest_duration = randf_range(4.5, 8.0)
+        _play_sound(_sigh_sound)
         _set_bubble_text("Resting with one eye open.", 2.8)
         return
     _begin_watch_post()
@@ -1085,6 +1111,7 @@ func _update_ambient_behavior(delta: float) -> void:
         _rest_timer = 0.0
         _walk_pause = 0.0
         _rest_duration = randf_range(4.5, 8.5)
+        _play_sound(_sigh_sound)
         _set_bubble_text("Resting with one eye open.", 3.0)
         return
     if _state == "alert" and _bark_cooldown <= 0.0 and randf() < BARK_TRIGGER_CHANCE:
