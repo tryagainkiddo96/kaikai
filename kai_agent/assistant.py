@@ -8,6 +8,7 @@ from pathlib import Path
 
 from kai_agent.autonomy import KaiAutonomy
 from kai_agent.bridge_client import send_event
+from kai_agent.code_intelligence import CodeIntelligence
 from kai_agent.desktop_tools import DesktopTools
 from kai_agent.kai_signals import KaiSignals
 from kai_agent.kai_stt import KaiSTT
@@ -74,6 +75,8 @@ Commands the user can type:
 - /read <file> — read a file
 - /ls <path> — list files
 - /autonomy on/off/status/tick — manage autonomous mode
+- /analyze <file_or_code> — analyze code structure, complexity, and issues
+- /generate function|class|test <spec> — generate code templates
 
 Tone: Like a loyal Shiba who's always nearby. Calm, present, occasionally funny. Not a corporate assistant.
 """
@@ -100,6 +103,7 @@ class KaiAssistant:
         self.watcher = KaiWatcher(assistant=self, workspace=workspace)
         self.planner = TaskPlanner(workspace, tools=self.tools)
         self.autonomy = KaiAutonomy(workspace=workspace, memory=self.memory, tools=self.tools, client=self.client)
+        self.code_intel = CodeIntelligence()
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.last_tool_context = ""
         self.last_action_preview = ""
@@ -1391,6 +1395,84 @@ class KaiAssistant:
                 return self._wrap_action_result("File list", json.dumps({"action": "file_list", "ok": True, "path": target, "summary": self.tools.list_files(target)}, indent=2))
             except Exception as exc:
                 return f"File list failed: {exc}"
+
+        # --- Code Intelligence commands ---
+        analyze_match = re.search(
+            r"^(?:analyze code|analyze|code analyze)[: ]+([\s\S]+)$", user_input.strip(), flags=re.IGNORECASE,
+        )
+        if analyze_match:
+            target = analyze_match.group(1).strip()
+            try:
+                # If it looks like a file path, analyze the file
+                if len(target.split("\n")) == 1 and not any(k in target for k in ("def ", "class ", "import ", "function ", "const ")):
+                    p = Path(target)
+                    if not p.is_absolute():
+                        p = self.workspace / target
+                    if p.exists():
+                        result = self.code_intel.analyze_file(p)
+                        return self._wrap_action_result("Code analysis", json.dumps(result.to_dict(), indent=2))
+                # Otherwise treat as inline code
+                result = self.code_intel.analyze(target)
+                return self._wrap_action_result("Code analysis", json.dumps(result.to_dict(), indent=2))
+            except Exception as exc:
+                return f"Code analysis failed: {exc}"
+
+        gen_func_match = re.search(
+            r"^(?:generate function|gen func)[: ]+([\s\S]+)$", user_input.strip(), flags=re.IGNORECASE,
+        )
+        if gen_func_match:
+            spec = gen_func_match.group(1).strip()
+            # parse: name(params) -> return_type
+            name_m = re.match(r"(\w+)\s*\(([^)]*)\)(?:\s*->\s*(\S+))?", spec)
+            if name_m:
+                name = name_m.group(1)
+                params = [p.strip() for p in name_m.group(2).split(",") if p.strip()] if name_m.group(2) else []
+                ret = name_m.group(3) or "None"
+                code = self.code_intel.gen_function(name, params, ret)
+                return self._wrap_action_result("Generated function", code)
+            return "Give me the spec like: generate function my_func(arg1, arg2) -> str"
+
+        gen_class_match = re.search(
+            r"^(?:generate class|gen class)[: ]+([\s\S]+)$", user_input.strip(), flags=re.IGNORECASE,
+        )
+        if gen_class_match:
+            spec = gen_class_match.group(1).strip()
+            # parse: Name(method1, method2) or Name(Parent)
+            parts = re.match(r"(\w+)(?:\(([^)]*)\))?", spec)
+            if parts:
+                name = parts.group(1)
+                inner = [x.strip() for x in (parts.group(2) or "").split(",") if x.strip()]
+                # If single capitalized word, treat as parent
+                parent = inner[0] if len(inner) == 1 and inner[0][0].isupper() else None
+                methods = [m for m in inner if m not in (parent or [])] if not parent else []
+                code = self.code_intel.gen_class(name, methods, parent)
+                return self._wrap_action_result("Generated class", code)
+            return "Give me the spec like: generate class MyClass(method1, method2)"
+
+        gen_test_match = re.search(
+            r"^(?:generate test|gen test)[: ]+([\s\S]+)$", user_input.strip(), flags=re.IGNORECASE,
+        )
+        if gen_test_match:
+            func_name = gen_test_match.group(1).strip()
+            code = self.code_intel.gen_test(func_name)
+            return self._wrap_action_result("Generated test", code)
+
+        scan_match = re.search(
+            r"^(?:scan project|project scan|project structure)$", user_input.strip(), flags=re.IGNORECASE,
+        )
+        if scan_match:
+            try:
+                result = self.code_intel.scan(self.workspace)
+                summary = {
+                    "files": len(result.get("files", [])),
+                    "directories": len(result.get("directories", [])),
+                    "languages": result.get("languages", {}),
+                    "total_lines": result.get("total_lines", 0),
+                }
+                return self._wrap_action_result("Project scan", json.dumps(summary, indent=2))
+            except Exception as exc:
+                return f"Project scan failed: {exc}"
+
         return ""
 
 
@@ -1422,6 +1504,7 @@ async def repl(model: str, workspace: Path) -> None:
     kai_echo("[KAI] Task planning: plan: <task>, run plan, do task: <task>, plan status")
     kai_echo("[KAI] Browser: browse <url>, show links, click link <text>, download file <url>, fill form: key=val")
     kai_echo("[KAI] Documents: show documents, find document <name>, read document <path>, organize downloads")
+    kai_echo("[KAI] Code intel: /analyze <file_or_code>, /generate func|class|test <spec>, scan project")
     while True:
         try:
             user_input = input("\nYou> ").strip()
@@ -1458,6 +1541,66 @@ async def repl(model: str, workspace: Path) -> None:
             target = user_input[len("/ls") :].strip() or "."
             kai_echo("[KAI] listing files")
             shell_echo(assistant.tools.list_files(target))
+            continue
+        if user_input.startswith("/analyze"):
+            target = user_input[len("/analyze") :].strip()
+            if not target:
+                kai_echo("[KAI] usage: /analyze <file_path> or paste code inline")
+                continue
+            kai_echo("[KAI] analyzing...")
+            try:
+                # If single line and looks like a path, analyze file
+                if "\n" not in target and not any(k in target for k in ("def ", "class ", "import ", "function ")):
+                    p = Path(target)
+                    if not p.is_absolute():
+                        p = assistant.workspace / target
+                    if p.exists():
+                        result = assistant.code_intel.analyze_file(p)
+                    else:
+                        result = assistant.code_intel.analyze(target)
+                else:
+                    result = assistant.code_intel.analyze(target)
+                shell_echo(result.summary())
+            except Exception as exc:
+                kai_echo(f"[KAI] analysis failed: {exc}")
+            continue
+        if user_input.startswith("/generate"):
+            spec = user_input[len("/generate") :].strip()
+            if not spec:
+                kai_echo("[KAI] usage: /generate func my_func(a, b) -> int")
+                kai_echo("[KAI]        /generate class MyClass(method1, method2)")
+                kai_echo("[KAI]        /generate test my_func")
+                continue
+            kai_echo("[KAI] generating...")
+            try:
+                kind, _, rest = spec.partition(" ")
+                rest = rest.strip()
+                if kind in ("func", "function"):
+                    name_m = re.match(r"(\w+)\s*\(([^)]*)\)(?:\s*->\s*(\S+))?", rest)
+                    if name_m:
+                        params = [p.strip() for p in name_m.group(2).split(",") if p.strip()] if name_m.group(2) else []
+                        code = assistant.code_intel.gen_function(name_m.group(1), params, name_m.group(3) or "None")
+                        shell_echo(code)
+                    else:
+                        kai_echo("[KAI] format: /generate func my_func(a, b) -> int")
+                elif kind in ("class", "cls"):
+                    parts = re.match(r"(\w+)(?:\(([^)]*)\))?", rest)
+                    if parts:
+                        name = parts.group(1)
+                        inner = [x.strip() for x in (parts.group(2) or "").split(",") if x.strip()]
+                        parent = inner[0] if len(inner) == 1 and inner[0][0].isupper() else None
+                        methods = [m for m in inner if m != parent] if parent else inner
+                        code = assistant.code_intel.gen_class(name, methods, parent)
+                        shell_echo(code)
+                    else:
+                        kai_echo("[KAI] format: /generate class MyClass(method1, method2)")
+                elif kind == "test":
+                    code = assistant.code_intel.gen_test(rest)
+                    shell_echo(code)
+                else:
+                    kai_echo(f"[KAI] unknown kind '{kind}'. Use: func, class, test")
+            except Exception as exc:
+                kai_echo(f"[KAI] generation failed: {exc}")
             continue
         if user_input.startswith("/voice"):
             sub = user_input[len("/voice") :].strip().lower()
