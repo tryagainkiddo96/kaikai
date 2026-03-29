@@ -191,6 +191,32 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
   });
 });
 
+// Clear chat
+document.getElementById("clearChat")?.addEventListener("click", () => {
+  if (messagesEl.children.length <= 1) return;
+  messagesEl.innerHTML = "";
+  appendMessageNoSave("assistant", "Chat cleared. What's next?");
+  saveMessages();
+});
+
+// Keyboard shortcuts
+document.addEventListener("keydown", (e) => {
+  // Ctrl+L = clear chat
+  if (e.ctrlKey && e.key === "l") {
+    e.preventDefault();
+    document.getElementById("clearChat")?.click();
+  }
+  // Ctrl+/ = focus input
+  if (e.ctrlKey && e.key === "/") {
+    e.preventDefault();
+    inputEl.focus();
+  }
+  // Escape = blur input
+  if (e.key === "Escape" && document.activeElement === inputEl) {
+    inputEl.blur();
+  }
+});
+
 // ─── Init ───
 const hadHistory = loadMessages();
 pingHealth();

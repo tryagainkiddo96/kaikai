@@ -409,6 +409,35 @@ h1 {
   30% { transform: translateY(-6px); opacity: 1; }
 }
 
+/* ─── Messages toolbar ─── */
+
+.messages-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+  position: relative;
+  z-index: 1;
+}
+
+.clear-btn {
+  border: none;
+  background: transparent;
+  color: var(--kai-tan);
+  font-family: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.clear-btn:hover {
+  opacity: 1;
+  color: var(--kai-rust);
+}
+
 /* ─── Quick Actions ─── */
 
 .quick-actions {
