@@ -9,6 +9,7 @@ from pathlib import Path
 from kai_agent.autonomy import KaiAutonomy
 from kai_agent.bridge_client import send_event
 from kai_agent.desktop_tools import DesktopTools
+from kai_agent.kai_signals import KaiSignals
 from kai_agent.kai_tts import KaiTTS
 from kai_agent.kai_vision import KaiVision
 from kai_agent.logger import KaiLogger
@@ -48,6 +49,7 @@ You have access to:
 - Persistent memory (/remember, /memory)
 - Screen capture and OCR (/screen)
 - Webcam vision (/look — see through camera, detect motion/presence)
+- Signal awareness (/signal — WiFi, Bluetooth, network interfaces)
 - Web browsing (when available)
 
 Commands the user can type:
@@ -58,6 +60,10 @@ Commands the user can type:
 - /look motion — just detect motion
 - /look presence — just check if someone is there
 - /look save — save a webcam frame to disk
+- /signal — summary of WiFi, Bluetooth, networks
+- /signal wifi — scan WiFi networks
+- /signal bt — scan Bluetooth devices
+- /signal net — show network interfaces
 - /run <cmd> — run a shell command
 - /read <file> — read a file
 - /ls <path> — list files
@@ -83,6 +89,7 @@ class KaiAssistant:
         ]
         self.tools = DesktopTools(workspace)
         self.vision = KaiVision(workspace=workspace)
+        self.signals = KaiSignals()
         self.planner = TaskPlanner(workspace, tools=self.tools)
         self.autonomy = KaiAutonomy(workspace=workspace, memory=self.memory, tools=self.tools, client=self.client)
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -1477,6 +1484,33 @@ async def repl(model: str, workspace: Path) -> None:
                 shell_echo(result.get("summary", "No data"))
                 if result.get("events"):
                     shell_echo(f"Events: {', '.join(result['events'])}")
+            continue
+        if user_input.startswith("/signal"):
+            sub = user_input[len("/signal") :].strip().lower()
+            kai_echo("[KAI] scanning signals...")
+            if sub == "wifi":
+                result = assistant.signals.scan_wifi()
+                if result.get("available"):
+                    for net in result["networks"][:10]:
+                        shell_echo(f"  {net['ssid']} — {net.get('signal', '?')}% {net.get('security', '')}")
+                else:
+                    shell_echo(f"WiFi scan failed: {result.get('error', 'unknown')}")
+            elif sub == "bt":
+                result = assistant.signals.scan_bluetooth()
+                if result.get("available"):
+                    for dev in result["devices"]:
+                        shell_echo(f"  {dev['name']} ({dev.get('type', '?')})")
+                    if not result["devices"]:
+                        shell_echo("  No Bluetooth devices found.")
+                else:
+                    shell_echo(f"BT scan failed: {result.get('error', 'unknown')}")
+            elif sub == "net":
+                result = assistant.signals.get_interfaces()
+                for iface in result.get("interfaces", []):
+                    addrs = ", ".join(iface.get("addresses", []))
+                    shell_echo(f"  {iface['name']} [{iface['type']}] {iface['state']} — {addrs}")
+            else:
+                shell_echo(assistant.signals.summarize())
             continue
         if user_input.startswith("/autonomy"):
             subcommand = user_input[len("/autonomy") :].strip().lower()
