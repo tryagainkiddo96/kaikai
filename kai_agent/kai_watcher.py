@@ -369,30 +369,41 @@ class KaiWatcher:
                 "Morning. You're up early.",
                 "Hey. Good to see you.",
                 "Morning. Saiya's been watching the window.",
+                "Morning. I dreamed about the dog park.",
+                "Hey. The sun's in my eyes but I'm not moving.",
             ],
             "return_greeting": [
                 "Hey. Been a while.",
                 "Welcome back. I was getting bored.",
                 "There you are.",
+                "I counted the seconds. All twelve thousand of them.",
+                "Saiya pretended she didn't notice you left. She did.",
             ],
             "overwork_break": [
                 "You've been at this a while. Take a break?",
                 "Even Kai takes naps. Just saying.",
                 "Your eyes are gonna fall out. Step away for a minute.",
+                "Yuki would have put her head on your lap by now. Take the hint.",
+                "You've earned a walk. I'll come with.",
             ],
             "idle_checkin": [
                 "Still there?",
                 "Just checking in.",
                 "I'm here if you need me.",
+                "The house is quiet. I don't hate it.",
+                "I've been watching the window. Nothing happened. Still worth it.",
             ],
             "late_night": [
                 "It's late. I'm still up, but I'm a Shiba.",
                 "Can't sleep? Me neither.",
                 "The house is quiet tonight.",
+                "3am thoughts hit different. I should know.",
+                "Saiya's asleep. She'd be disappointed in both of us.",
             ],
             "unusual_hour": [
                 "You're up at a weird time.",
                 "Everything okay? You don't usually do this.",
+                "This isn't like you. I'm not judging. I'm noting.",
             ],
         }
 

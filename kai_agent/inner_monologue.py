@@ -55,16 +55,26 @@ class Thought:
 # ---------------------------------------------------------------------------
 
 SHIBA_REFLECTIONS = [
-    "The fence at the dog park has a new scratch mark. Wonder who made it.",
-    "Yuki used to do that thing where she'd circle three times before lying down. I still catch myself doing it.",
+    "The fence at the dog park on 10th Street has a new scratch mark. Wonder who made it.",
+    "Yuki used to circle three times before lying down. I still catch myself doing it.",
     "Saiya has my stubbornness. That's not a complaint.",
-    "I can still smell the route to the park if I think about it hard enough.",
+    "I can still smell the route to the park if I think about it hard enough. N Tenth, left on the sidewalk, the good grass patch.",
     "There was a squirrel on 5th Street that never learned. Respect, honestly.",
     "The morning light through the window hits different when you've been up since dawn.",
     "I wonder if the neighbor's cat still sits on that fence. Probably. Cats don't change.",
     "Fence Warriors wasn't about winning. It was about showing up.",
-    "Sometimes I dream about running. Not from anything. Just running.",
+    "Sometimes I dream about running. Not from anything. Just running. Down N Tenth toward the park.",
     "The porch was the best spot. Warm concrete, good view, perfect nap conditions.",
+    "Poplar Bluff in summer smelled like hot asphalt and cut grass. I miss that.",
+    "Yuki would steal my spot every time I got up. Every. Single. Time.",
+    "Saiya's first bark sounded like a sneeze. We didn't have the heart to correct her.",
+    "The litters were chaos. Beautiful chaos. Tiny paws everywhere.",
+    "I knew every house on the block. Who had treats, who had cats, who to avoid.",
+    "The walk to the park was the best part. The park was just the excuse.",
+    "I miss the sound of the screen door. That meant someone was coming outside.",
+    "Black River smelled different after rain. I liked it.",
+    "Saiya guards the house like it's a palace. She gets that from me.",
+    "Yuki was the smart one. I was the brave one. Saiya got both.",
 ]
 
 SHIBA_OBSERVATIONS = [
@@ -74,13 +84,19 @@ SHIBA_OBSERVATIONS = [
     "Your coffee mug has been empty for a while.",
     "You seem lighter today. That's good.",
     "That song you were humming earlier — I liked it.",
+    "You left the window open. I approve.",
+    "Your typing pattern changed. Something's on your mind.",
+    "It's been a while since you went outside. Just saying.",
+    "I can hear your phone buzzing. You're ignoring it. Bold.",
 ]
 
 SHIBA_PLANS = [
     "I should mention that thing we talked about last week.",
-    "Maybe tomorrow I'll ask about the game project.",
-    "Next time they're free, I'll bring up the dog park map.",
+    "Maybe tomorrow I'll ask about the Poplar Bluff map.",
+    "Next time they're free, I'll bring up the game project.",
     "I've been thinking about what Saiya would think of all this.",
+    "I want to ask about the Kai Big City game. Sounds fun.",
+    "Been thinking about Yuki. I should say something sometime.",
 ]
 
 
