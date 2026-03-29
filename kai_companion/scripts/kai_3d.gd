@@ -1306,5 +1306,28 @@ func _handle_event(payload: String) -> void:
             if notice_text.is_empty():
                 notice_text = "I brought you a little message."
             _set_bubble_text(notice_text, 4.0)
+        "kai_alert":
+            _set_state("alert", true)
+            _alert_hold = randf_range(ALERT_HOLD_MIN, ALERT_HOLD_MAX)
+            _play_sound(_huff_sound)
+            var alert_text := str(parsed_payload.get("text", "")).strip_edges()
+            if alert_text.is_empty():
+                alert_text = "Something caught my eye."
+            _set_bubble_text(alert_text, 3.0)
+            _update_mood_display("Alert")
+        "kai_sniff":
+            _begin_sniff()
+            var sniff_text := str(parsed_payload.get("text", "")).strip_edges()
+            if not sniff_text.is_empty():
+                _set_bubble_text(sniff_text, 3.0)
+        "kai_saw":
+            _set_state("alert", true)
+            _alert_hold = randf_range(1.0, 2.5)
+            var saw_text := str(parsed_payload.get("text", "")).strip_edges()
+            if saw_text.is_empty():
+                saw_text = "I see you!"
+            _set_bubble_text(saw_text, 4.0)
+            _update_mood_display("Watching")
+            _play_sound(_wag_sound)
         _:
             pass

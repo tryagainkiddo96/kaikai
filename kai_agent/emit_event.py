@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Send Kai companion events to the websocket bridge.")
     parser.add_argument(
         "event",
-        choices=["kai_thinking", "kai_walk", "kai_sleep", "kai_wag_tail", "kai_notice"],
+        choices=["kai_thinking", "kai_walk", "kai_sleep", "kai_wag_tail", "kai_notice", "kai_alert", "kai_sniff", "kai_saw"],
         help="Event name for the companion.",
     )
     parser.add_argument("--url", default=DEFAULT_URL, help="Websocket bridge URL.")

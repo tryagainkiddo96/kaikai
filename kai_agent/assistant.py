@@ -10,6 +10,7 @@ from kai_agent.autonomy import KaiAutonomy
 from kai_agent.bridge_client import send_event
 from kai_agent.desktop_tools import DesktopTools
 from kai_agent.kai_tts import KaiTTS
+from kai_agent.kai_vision import KaiVision
 from kai_agent.logger import KaiLogger
 from kai_agent.memory import KaiMemory
 from kai_agent.ollama_client import OllamaClient
@@ -46,12 +47,17 @@ You have access to:
 - Shell command execution
 - Persistent memory (/remember, /memory)
 - Screen capture and OCR (/screen)
+- Webcam vision (/look — see through camera, detect motion/presence)
 - Web browsing (when available)
 
 Commands the user can type:
 - /remember <text> — save something for later
 - /memory — show what you remember
 - /screen — capture and read the screen
+- /look — webcam scene analysis (motion, presence, brightness)
+- /look motion — just detect motion
+- /look presence — just check if someone is there
+- /look save — save a webcam frame to disk
 - /run <cmd> — run a shell command
 - /read <file> — read a file
 - /ls <path> — list files
@@ -76,6 +82,7 @@ class KaiAssistant:
             if item.strip() and item.strip() != model
         ]
         self.tools = DesktopTools(workspace)
+        self.vision = KaiVision(workspace=workspace)
         self.planner = TaskPlanner(workspace, tools=self.tools)
         self.autonomy = KaiAutonomy(workspace=workspace, memory=self.memory, tools=self.tools, client=self.client)
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -1449,6 +1456,27 @@ async def repl(model: str, workspace: Path) -> None:
             else:
                 state = "on" if assistant.tts.enabled else "off"
                 kai_echo(f"[KAI] voice is {state}. Use /voice on or /voice off")
+            continue
+        if user_input.startswith("/look"):
+            sub = user_input[len("/look") :].strip().lower()
+            if not assistant.vision.is_available:
+                kai_echo("[KAI] vision unavailable — install opencv: pip install opencv-python")
+                continue
+            kai_echo("[KAI] looking...")
+            if sub == "motion":
+                result = assistant.vision.detect_motion()
+                shell_echo(f"Motion: {result['motion']} (level: {result['level']})")
+            elif sub == "presence":
+                result = assistant.vision.detect_presence()
+                shell_echo(f"Present: {result['present']} (faces: {result['faces']})")
+            elif sub == "save":
+                path = assistant.vision.save_frame()
+                shell_echo(f"Saved: {path}" if path else "Failed to capture")
+            else:
+                result = assistant.vision.analyze_scene()
+                shell_echo(result.get("summary", "No data"))
+                if result.get("events"):
+                    shell_echo(f"Events: {', '.join(result['events'])}")
             continue
         if user_input.startswith("/autonomy"):
             subcommand = user_input[len("/autonomy") :].strip().lower()
