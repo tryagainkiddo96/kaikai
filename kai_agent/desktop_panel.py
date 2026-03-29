@@ -57,7 +57,7 @@ class KaiPanel:
         self.root.after(WINDOW_REFRESH_MS, self._auto_refresh_window_link)
 
     def _build_window(self) -> None:
-        self.root.title("Kai Nexus")
+        self.root.title("Kai")
         self.root.geometry("460x820+40+40")
         self.root.minsize(380, 640)
         self.root.configure(bg=BG)

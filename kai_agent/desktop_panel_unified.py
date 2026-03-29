@@ -80,7 +80,7 @@ class KaiPanelUnified:
         self.root.after(1500, self._poll_companion_status)
 
     def _build_window(self) -> None:
-        self.root.title("Kai Command Center")
+        self.root.title("Kai")
         self.root.geometry("1240x820+30+30")
         self.root.minsize(1080, 700)
         self.root.configure(bg=BG)
