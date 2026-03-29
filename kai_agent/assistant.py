@@ -12,6 +12,7 @@ from kai_agent.code_intelligence import CodeIntelligence
 from kai_agent.desktop_tools import DesktopTools
 from kai_agent.emotional_state import EmotionalState
 from kai_agent.inner_monologue import InnerMonologue
+from kai_agent.relationship_model import RelationshipModel
 from kai_agent.semantic_memory import SemanticMemory
 from kai_agent.kai_identity import KAI_IDENTITY, KAI_FAMILY
 from kai_agent.social_timing import SocialTiming
@@ -129,6 +130,7 @@ class KaiAssistant:
         self.semantic_mem = SemanticMemory(save_path=workspace / "memory" / "semantic_memory.json")
         self.social_timing = SocialTiming(save_path=workspace / "memory" / "social_timing.json")
         self.inner_voice = InnerMonologue(save_path=workspace / "memory" / "inner_monologue.json")
+        self.relationship = RelationshipModel(save_path=workspace / "memory" / "relationship.json")
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.last_tool_context = ""
         self.last_action_preview = ""
@@ -146,10 +148,14 @@ class KaiAssistant:
         emotion_modifiers = "\n".join(emotion_color["modifiers"]) if emotion_color["modifiers"] else ""
         # Inner monologue — thoughts Kai has been having
         pending_thought = self.inner_voice.get_pending_summary()
+        # Relationship — who this user is
+        relationship_context = self.relationship.get_relationship_context()
 
         system_parts = [memory_context]
         if semantic_context:
             system_parts.append(semantic_context)
+        if relationship_context:
+            system_parts.append(relationship_context)
         if emotion_modifiers:
             system_parts.append(f"Your current emotional state ({mood_line}):\n{emotion_modifiers}")
         if pending_thought:
@@ -168,6 +174,9 @@ class KaiAssistant:
 
         # Social timing: track interaction
         self.social_timing.interaction_started()
+
+        # Relationship: learn from this message
+        self.relationship.process_message(user_input)
 
         # Inner monologue: generate thought if idle long enough
         context = {"user_active": True, "recent_interaction": True}

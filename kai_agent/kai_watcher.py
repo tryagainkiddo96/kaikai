@@ -76,6 +76,7 @@ class KaiWatcher:
             self._watch_wifi,
             self._watch_battery,
             self._watch_clipboard,
+            self._watch_social_timing,
         ]
 
         for watcher_fn in watchers:
@@ -311,3 +312,115 @@ class KaiWatcher:
         except Exception:
             pass
         return ""
+
+    # ─── Social Timing (proactive conversations) ───
+
+    def _watch_social_timing(self):
+        """
+        Periodically check if Kai should proactively speak up.
+        Uses the social timing engine to detect the right moment,
+        then generates a message via inner monologue or template.
+        """
+        time.sleep(30)  # Let everything settle on startup
+
+        while self._running:
+            try:
+                if self.assistant and hasattr(self.assistant, 'social_timing'):
+                    signal = self.assistant.social_timing.check_for_proactive_moment()
+                    if signal:
+                        # Get context for message generation
+                        prompt = self.assistant.social_timing.get_proactive_prompt(signal)
+
+                        # Check inner monologue for something to say
+                        thought = None
+                        if hasattr(self.assistant, 'inner_voice'):
+                            thought = self.assistant.inner_voice.get_next_thought()
+
+                        # Generate the message
+                        message = self._generate_proactive_message(signal, thought, prompt)
+
+                        if message:
+                            self._emit("proactive", message, speak=False)
+
+                            # Also deliver via the assistant's chat if available
+                            self._deliver_proactive_via_chat(message)
+
+                            # Mark thought as delivered if we used it
+                            if thought and hasattr(self.assistant, 'inner_voice'):
+                                self.assistant.inner_voice.mark_delivered(thought)
+
+            except Exception:
+                pass
+
+            time.sleep(60)  # Check every minute
+
+    def _generate_proactive_message(self, signal: dict, thought, prompt: str) -> str:
+        """Generate a proactive message from signal + thought context."""
+        msg_type = signal.get("message_type", "")
+
+        # If we have an inner monologue thought, use it (with some probability)
+        import random
+        if thought and random.random() < 0.4:
+            return thought.content
+
+        # Otherwise use template messages based on signal type
+        templates = {
+            "morning_greeting": [
+                "Morning. You're up early.",
+                "Hey. Good to see you.",
+                "Morning. Saiya's been watching the window.",
+            ],
+            "return_greeting": [
+                "Hey. Been a while.",
+                "Welcome back. I was getting bored.",
+                "There you are.",
+            ],
+            "overwork_break": [
+                "You've been at this a while. Take a break?",
+                "Even Kai takes naps. Just saying.",
+                "Your eyes are gonna fall out. Step away for a minute.",
+            ],
+            "idle_checkin": [
+                "Still there?",
+                "Just checking in.",
+                "I'm here if you need me.",
+            ],
+            "late_night": [
+                "It's late. I'm still up, but I'm a Shiba.",
+                "Can't sleep? Me neither.",
+                "The house is quiet tonight.",
+            ],
+            "unusual_hour": [
+                "You're up at a weird time.",
+                "Everything okay? You don't usually do this.",
+            ],
+        }
+
+        options = templates.get(msg_type, [])
+        if options:
+            return random.choice(options)
+
+        return ""
+
+    def _deliver_proactive_via_chat(self, message: str) -> None:
+        """Try to deliver a proactive message through the assistant's chat system."""
+        if not self.assistant:
+            return
+        try:
+            # Add to chat history so it appears in conversations
+            if hasattr(self.assistant, 'history'):
+                self.assistant.history.append({"role": "assistant", "content": message})
+            # Log to session
+            if hasattr(self.assistant, 'memory'):
+                self.assistant.memory.append_session("assistant", f"[proactive] {message}")
+            # Emit event for desktop panel / widget
+            from kai_agent.bridge_client import send_event
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    loop.create_task(send_event("kai_proactive", message=message))
+            except Exception:
+                pass
+        except Exception:
+            pass
