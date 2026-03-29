@@ -11,8 +11,10 @@ from kai_agent.bridge_client import send_event
 from kai_agent.code_intelligence import CodeIntelligence
 from kai_agent.desktop_tools import DesktopTools
 from kai_agent.emotional_state import EmotionalState
+from kai_agent.inner_monologue import InnerMonologue
 from kai_agent.semantic_memory import SemanticMemory
 from kai_agent.kai_identity import KAI_IDENTITY, KAI_FAMILY
+from kai_agent.social_timing import SocialTiming
 from kai_agent.kai_signals import KaiSignals
 from kai_agent.kai_stt import KaiSTT
 from kai_agent.kai_tts import KaiTTS
@@ -125,6 +127,8 @@ class KaiAssistant:
         self.code_intel = CodeIntelligence()
         self.emotions = EmotionalState(save_path=workspace / "memory" / "emotional_state.json")
         self.semantic_mem = SemanticMemory(save_path=workspace / "memory" / "semantic_memory.json")
+        self.social_timing = SocialTiming(save_path=workspace / "memory" / "social_timing.json")
+        self.inner_voice = InnerMonologue(save_path=workspace / "memory" / "inner_monologue.json")
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.last_tool_context = ""
         self.last_action_preview = ""
@@ -140,12 +144,16 @@ class KaiAssistant:
         emotion_color = self.emotions.get_response_color()
         mood_line = emotion_color["brief_mood"]
         emotion_modifiers = "\n".join(emotion_color["modifiers"]) if emotion_color["modifiers"] else ""
+        # Inner monologue — thoughts Kai has been having
+        pending_thought = self.inner_voice.get_pending_summary()
 
         system_parts = [memory_context]
         if semantic_context:
             system_parts.append(semantic_context)
         if emotion_modifiers:
             system_parts.append(f"Your current emotional state ({mood_line}):\n{emotion_modifiers}")
+        if pending_thought:
+            system_parts.append(pending_thought)
 
         return self.history + [
             {"role": "system", "content": "\n\n".join(p for p in system_parts if p)},
@@ -157,6 +165,13 @@ class KaiAssistant:
 
         # Emotional: user spoke
         self.emotions.process_event("user_spoke")
+
+        # Social timing: track interaction
+        self.social_timing.interaction_started()
+
+        # Inner monologue: generate thought if idle long enough
+        context = {"user_active": True, "recent_interaction": True}
+        self.inner_voice.think(context)
 
         # Semantic: learn from this message
         self.semantic_mem.learn_from_conversation(user_input)
@@ -226,6 +241,11 @@ class KaiAssistant:
         self.history.append({"role": "user", "content": user_input})
         self.history.append({"role": "assistant", "content": reply})
         self.memory.append_session("assistant", reply)
+
+        # Deliver any pending inner thought that was surfaced
+        pending = self.inner_voice.get_next_thought()
+        if pending:
+            self.inner_voice.mark_delivered(pending)
 
         # Emotional processing based on interaction outcome
         if tool_context:
