@@ -1,10 +1,11 @@
 ## Kai — Player Controller
-## Top-down movement, attack, bark, sniff, and heal.
+## Top-down movement, spy abilities, stealth mechanics.
 extends CharacterBody2D
 class_name KaiPlayer
 
 # -- Movement --
 @export var speed: float = 200.0
+@export var sneak_speed: float = 100.0
 @export var dash_speed: float = 400.0
 @export var dash_duration: float = 0.15
 
@@ -27,7 +28,13 @@ class_name KaiPlayer
 var hp: int
 var is_dashing: bool = false
 var is_healing: bool = false
+var is_sneaking: bool = false
 var facing: Vector2 = Vector2.DOWN
+
+# -- Spy state --
+var stealth_modifier: float = 1.0
+var social_stealth: bool = false
+var invulnerable: bool = false
 
 # -- Cooldown timers --
 var attack_timer: float = 0.0
@@ -37,8 +44,11 @@ var heal_timer: float = 0.0
 var dash_timer: float = 0.0
 
 # -- State --
-enum State { IDLE, WALKING, ATTACKING, BARKING, SNIFFING, HEALING, DASHING, HURT }
+enum State { IDLE, WALKING, SNEAKING, ATTACKING, BARKING, SNIFFING, HEALING, DASHING, HURT, GHOST }
 var state: State = State.IDLE
+
+# -- Spy abilities system --
+var spy_abilities: KaiAbilities
 
 signal hp_changed(new_hp: int, max_hp: int)
 signal ability_used(ability_name: String)
@@ -49,6 +59,12 @@ func _ready() -> void:
 	hp = max_hp
 	add_to_group("player")
 	hp_changed.emit(hp, max_hp)
+	
+	# Initialize spy abilities
+	spy_abilities = KaiAbilities.new(self)
+	spy_abilities.ability_activated.connect(_on_spy_ability_activated)
+	spy_abilities.ability_ended.connect(_on_spy_ability_ended)
+	add_child(spy_abilities)
 
 
 func _physics_process(delta: float) -> void:
@@ -71,8 +87,30 @@ func _tick_cooldowns(delta: float) -> void:
 
 
 func _handle_input() -> void:
-	# Abilities (can interrupt idle/walk)
-	if state in [State.IDLE, State.WALKING]:
+	# Sneak toggle (hold shift)
+	is_sneaking = Input.is_action_pressed("sneak") if InputMap.has_action("sneak") else false
+	
+	# Spy abilities (number keys 1-7 + ultimate)
+	if spy_abilities:
+		if Input.is_action_just_pressed("spy_1"):
+			spy_abilities.activate("silent_paws")
+		elif Input.is_action_just_pressed("spy_2"):
+			spy_abilities.activate("shadow_fur")
+		elif Input.is_action_just_pressed("spy_3"):
+			spy_abilities.activate("good_boy_face")
+		elif Input.is_action_just_pressed("spy_4"):
+			spy_abilities.activate("deep_sniff")
+		elif Input.is_action_just_pressed("spy_5"):
+			spy_abilities.activate("smoke_roll")
+		elif Input.is_action_just_pressed("spy_6"):
+			spy_abilities.activate("paw_cloner")
+		elif Input.is_action_just_pressed("spy_7"):
+			spy_abilities.activate("bone_decoy")
+		elif Input.is_action_just_pressed("spy_ultimate"):
+			spy_abilities.activate("fox_walk")
+
+	# Combat abilities (can interrupt idle/walk)
+	if state in [State.IDLE, State.WALKING, State.SNEAKING]:
 		if Input.is_action_just_pressed("attack") and attack_timer <= 0:
 			_do_attack()
 		elif Input.is_action_just_pressed("bark") and bark_timer <= 0:
@@ -95,21 +133,69 @@ func _apply_movement(_delta: float) -> void:
 	if input_dir.length() > 0.1:
 		facing = input_dir.normalized()
 		input_dir = input_dir.normalized()
-		velocity = input_dir * (dash_speed if is_dashing else speed)
-		state = State.WALKING if not is_dashing else State.DASHING
+		
+		var move_speed := speed
+		if is_sneaking:
+			move_speed = sneak_speed
+		elif is_dashing:
+			move_speed = dash_speed
+		
+		# Fox walk = ghost speed
+		if spy_abilities and spy_abilities.is_active("fox_walk"):
+			move_speed = speed * 1.2
+		
+		velocity = input_dir * move_speed
+		
+		if is_sneaking and not is_dashing:
+			state = State.SNEAKING
+		elif not is_dashing:
+			state = State.WALKING
+		else:
+			state = State.DASHING
 	else:
 		velocity = Vector2.ZERO
-		if state == State.WALKING or state == State.DASHING:
+		if state in [State.WALKING, State.DASHING, State.SNEAKING]:
 			state = State.IDLE
 
 
 func _update_state() -> void:
-	# Animations would go here — for now just update the label
 	pass
 
 
 # ---------------------------------------------------------------------------
-# Abilities
+# Spy ability callbacks
+# ---------------------------------------------------------------------------
+
+func _on_spy_ability_activated(ability_name: String) -> void:
+	match ability_name:
+		"shadow_fur":
+			state = State.GHOST
+		"fox_walk":
+			state = State.GHOST
+	ability_used.emit(ability_name)
+
+
+func _on_spy_ability_ended(ability_name: String) -> void:
+	if state == State.GHOST:
+		state = State.IDLE
+
+
+# ---------------------------------------------------------------------------
+# Spy state setters (called by KaiAbilities)
+# ---------------------------------------------------------------------------
+
+func set_stealth_modifier(value: float) -> void:
+	stealth_modifier = value
+
+func set_social_stealth(value: bool) -> void:
+	social_stealth = value
+
+func set_invulnerable(value: bool) -> void:
+	invulnerable = value
+
+
+# ---------------------------------------------------------------------------
+# Combat abilities (same as before)
 # ---------------------------------------------------------------------------
 
 func _do_attack() -> void:
@@ -117,14 +203,13 @@ func _do_attack() -> void:
 	attack_timer = attack_cooldown
 	ability_used.emit("paw_swipe")
 
-	# Find enemies in attack range
 	var space := get_world_2d().direct_space_state
 	var query := PhysicsShapeQueryParameters2D.new()
 	var circle := CircleShape2D.new()
 	circle.radius = attack_range
 	query.shape = circle
 	query.transform = Transform2D(0, global_position + facing * attack_range * 0.5)
-	query.collision_mask = 2  # Enemies layer
+	query.collision_mask = 2
 
 	var results := space.intersect_shape(query)
 	for hit in results:
@@ -143,12 +228,9 @@ func _do_bark() -> void:
 	bark_timer = bark_cooldown
 	ability_used.emit("bark_signal")
 
-	# Stun enemies in radius
 	for body in _get_enemies_in_radius(bark_radius):
 		if body.has_method("stun"):
 			body.stun(bark_stun_duration)
-
-	# Visual feedback
 	_spawn_bark_effect()
 
 	await get_tree().create_timer(0.3).timeout
@@ -161,7 +243,6 @@ func _do_sniff() -> void:
 	sniff_timer = sniff_cooldown
 	ability_used.emit("sniff_out")
 
-	# Reveal hidden items / secrets in radius
 	for body in _get_bodies_in_radius(sniff_radius):
 		if body.has_method("reveal"):
 			body.reveal()
@@ -177,7 +258,6 @@ func _do_heal() -> void:
 	ability_used.emit("paw_shield")
 	is_healing = true
 
-	# Heal over 1 second
 	var heal_steps := 4
 	var heal_per_step := heal_amount / heal_steps
 	for i in heal_steps:
@@ -195,8 +275,13 @@ func _do_heal() -> void:
 # ---------------------------------------------------------------------------
 
 func take_damage(amount: int) -> void:
+	if invulnerable:
+		return
 	if is_healing:
-		return  # Paw Shield absorbs one hit
+		return
+	# Good Boy Face — enemies "pet" instead of attack
+	if social_stealth:
+		return
 	hp = maxi(hp - amount, 0)
 	hp_changed.emit(hp, max_hp)
 	state = State.HURT
@@ -212,11 +297,10 @@ func take_damage(amount: int) -> void:
 
 
 func _die() -> void:
-	# Death sequence — for now just reset HP
 	hp = max_hp
 	hp_changed.emit(hp, max_hp)
 	state = State.IDLE
-	global_position = Vector2(640, 360)  # Reset to center
+	global_position = Vector2(0, 0)
 
 
 # ---------------------------------------------------------------------------
@@ -240,7 +324,6 @@ func _get_bodies_in_radius(radius: float) -> Array:
 
 
 func _spawn_bark_effect() -> void:
-	# Simple visual — expanding circle
 	var circle := Sprite2D.new()
 	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	for x in 64:
