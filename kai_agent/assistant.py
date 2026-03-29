@@ -10,8 +10,10 @@ from kai_agent.autonomy import KaiAutonomy
 from kai_agent.bridge_client import send_event
 from kai_agent.desktop_tools import DesktopTools
 from kai_agent.kai_signals import KaiSignals
+from kai_agent.kai_stt import KaiSTT
 from kai_agent.kai_tts import KaiTTS
 from kai_agent.kai_vision import KaiVision
+from kai_agent.kai_watcher import KaiWatcher
 from kai_agent.logger import KaiLogger
 from kai_agent.memory import KaiMemory
 from kai_agent.ollama_client import OllamaClient
@@ -50,6 +52,8 @@ You have access to:
 - Screen capture and OCR (/screen)
 - Webcam vision (/look — see through camera, detect motion/presence)
 - Signal awareness (/signal — WiFi, Bluetooth, network interfaces)
+- Voice input (/listen — record and transcribe speech)
+- Proactive awareness (/watch on|off — Kai watches and speaks up on his own)
 - Web browsing (when available)
 
 Commands the user can type:
@@ -64,6 +68,8 @@ Commands the user can type:
 - /signal wifi — scan WiFi networks
 - /signal bt — scan Bluetooth devices
 - /signal net — show network interfaces
+- /listen — record voice and transcribe (needs sounddevice + whisper/vosk)
+- /watch on|off — toggle proactive awareness (idle, downloads, WiFi, battery)
 - /run <cmd> — run a shell command
 - /read <file> — read a file
 - /ls <path> — list files
@@ -90,6 +96,8 @@ class KaiAssistant:
         self.tools = DesktopTools(workspace)
         self.vision = KaiVision(workspace=workspace)
         self.signals = KaiSignals()
+        self.stt = KaiSTT()
+        self.watcher = KaiWatcher(assistant=self, workspace=workspace)
         self.planner = TaskPlanner(workspace, tools=self.tools)
         self.autonomy = KaiAutonomy(workspace=workspace, memory=self.memory, tools=self.tools, client=self.client)
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -1511,6 +1519,32 @@ async def repl(model: str, workspace: Path) -> None:
                     shell_echo(f"  {iface['name']} [{iface['type']}] {iface['state']} — {addrs}")
             else:
                 shell_echo(assistant.signals.summarize())
+            continue
+        if user_input == "/listen":
+            if not assistant.stt.available:
+                kai_echo(f"[KAI] STT unavailable (backend: {assistant.stt.backend_name}). Install: pip install faster-whisper sounddevice")
+                continue
+            kai_echo("[KAI] Listening... (speak now)")
+            text = assistant.stt.listen(duration=8, silence_timeout=3)
+            if text:
+                kai_echo(f"[KAI] You said: {text}")
+                # Treat as regular input
+                user_input = text
+            else:
+                kai_echo("[KAI] Didn't catch that.")
+                continue
+        if user_input.startswith("/watch"):
+            sub = user_input[len("/watch") :].strip().lower()
+            if sub in ("on", "1", "true"):
+                assistant.watcher.start()
+                kai_echo("[KAI] Proactive awareness on. I'll keep an eye on things.")
+                assistant.tts.speak("Watching.")
+            elif sub in ("off", "0", "false"):
+                assistant.watcher.stop()
+                kai_echo("[KAI] Proactive awareness off.")
+            else:
+                state = "on" if assistant.watcher._running else "off"
+                kai_echo(f"[KAI] Watcher is {state}. Use /watch on or /watch off")
             continue
         if user_input.startswith("/autonomy"):
             subcommand = user_input[len("/autonomy") :].strip().lower()
