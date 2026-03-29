@@ -1661,6 +1661,19 @@ async def repl(model: str, workspace: Path) -> None:
                 shell_echo(f"\n💭 Thinking: \"{thought.content}\"")
             shell_echo(f"\n{'═' * 40}")
             continue
+        if user_input == "/journal":
+            shell_echo("📖 Mood Journal")
+            summary = assistant.mood_journal.get_weekly_summary()
+            shell_echo(summary)
+            trend = assistant.mood_journal.get_trend(7)
+            if trend.get("dominant_mood"):
+                shell_echo(f"  Dominant mood this week: {trend['dominant_mood']}")
+            day_pattern = assistant.mood_journal.get_day_of_week_pattern()
+            if day_pattern:
+                best_day = max(day_pattern, key=day_pattern.get)
+                worst_day = min(day_pattern, key=day_pattern.get)
+                shell_echo(f"  Best day: {best_day}  |  Toughest: {worst_day}")
+            continue
         if user_input == "/screen":
             kai_echo("[KAI] screen capture")
             shell_echo(assistant.tools.capture_screen_ocr())

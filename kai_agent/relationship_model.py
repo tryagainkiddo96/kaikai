@@ -240,6 +240,17 @@ class RelationshipModel:
                 if word not in self.prefs.interests and word not in ("about", "should", "could", "would", "think", "maybe", "there"):
                     self.prefs.interests.append(word)
 
+        # Auto-detect name
+        import re
+        name_match = re.search(r"(?:my name is|call me|i'm|im|iam)\s+([A-Za-z]{2,20})", text, re.IGNORECASE)
+        if name_match and not self.prefs.preferred_name:
+            name = name_match.group(1).strip()
+            stopwords = {"just", "really", "going", "trying", "looking", "feeling", "not", "still", "here",
+                         "fine", "good", "okay", "happy", "sad", "tired", "busy", "ready", "back", "done"}
+            if name.lower() not in stopwords:
+                self.prefs.preferred_name = name.capitalize()
+                self.save()
+
         self.save()
 
     # -- Relationship context --
