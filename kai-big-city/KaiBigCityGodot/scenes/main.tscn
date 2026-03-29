@@ -1,0 +1,584 @@
+[gd_scene load_steps=43 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/pickup.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/npc.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://ui/hud.tscn" id="4"]
+[ext_resource type="Script" path="res://scripts/game.gd" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/dog_npc.tscn" id="6"]
+[ext_resource type="Script" path="res://scripts/dog_idle.gd" id="9"]
+
+[sub_resource type="Environment" id="1"]
+background_mode = 1
+background_color = Color(0.117647, 0.141176, 0.203922, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.478431, 0.564706, 0.705882, 1)
+ambient_light_energy = 0.7
+
+[sub_resource type="BoxMesh" id="2"]
+size = Vector3(36, 1, 28)
+
+[sub_resource type="BoxShape3D" id="3"]
+size = Vector3(36, 1, 28)
+
+[sub_resource type="BoxMesh" id="4"]
+size = Vector3(8, 1, 6)
+
+[sub_resource type="BoxShape3D" id="5"]
+size = Vector3(8, 1, 6)
+
+[sub_resource type="BoxMesh" id="6"]
+size = Vector3(6, 2, 4)
+
+[sub_resource type="BoxShape3D" id="7"]
+size = Vector3(6, 2, 4)
+
+[sub_resource type="BoxMesh" id="8"]
+size = Vector3(3, 1.2, 3)
+
+[sub_resource type="BoxShape3D" id="9"]
+size = Vector3(3, 1.2, 3)
+
+[sub_resource type="BoxMesh" id="10"]
+size = Vector3(6, 0.6, 6)
+
+[sub_resource type="BoxShape3D" id="11"]
+size = Vector3(6, 0.6, 6)
+
+[sub_resource type="BoxMesh" id="12"]
+size = Vector3(4, 0.6, 4)
+
+[sub_resource type="BoxShape3D" id="13"]
+size = Vector3(4, 0.6, 4)
+
+[sub_resource type="BoxMesh" id="14"]
+size = Vector3(14, 0.4, 3)
+
+[sub_resource type="BoxShape3D" id="15"]
+size = Vector3(14, 0.4, 3)
+
+[sub_resource type="BoxMesh" id="16"]
+size = Vector3(0.5, 1.2, 6)
+
+[sub_resource type="BoxShape3D" id="17"]
+size = Vector3(0.5, 1.2, 6)
+
+[sub_resource type="CylinderMesh" id="18"]
+top_radius = 0.25
+bottom_radius = 0.25
+height = 3.2
+
+[sub_resource type="CylinderShape3D" id="19"]
+radius = 0.3
+height = 3.2
+
+[sub_resource type="CylinderMesh" id="20"]
+top_radius = 0.28
+bottom_radius = 0.32
+height = 0.9
+
+[sub_resource type="CylinderShape3D" id="21"]
+radius = 0.34
+height = 1.0
+
+[sub_resource type="BoxMesh" id="22"]
+size = Vector3(2.4, 0.8, 2.4)
+
+[sub_resource type="BoxShape3D" id="23"]
+size = Vector3(2.4, 0.8, 2.4)
+
+[sub_resource type="BoxMesh" id="24"]
+size = Vector3(20, 0.05, 0.3)
+
+[sub_resource type="BoxShape3D" id="25"]
+size = Vector3(20, 0.05, 0.3)
+
+[sub_resource type="TorusMesh" id="26"]
+inner_radius = 0.28
+outer_radius = 0.34
+ring_segments = 32
+rings = 20
+
+[sub_resource type="StandardMaterial3D" id="27"]
+albedo_color = Color(0.55, 0.18, 0.78, 1)
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="28"]
+size = Vector3(8, 0.3, 8)
+
+[sub_resource type="BoxShape3D" id="29"]
+size = Vector3(8, 0.3, 8)
+
+[sub_resource type="BoxMesh" id="30"]
+size = Vector3(0.3, 1.1, 8.6)
+
+[sub_resource type="BoxShape3D" id="31"]
+size = Vector3(0.3, 1.1, 8.6)
+
+[sub_resource type="BoxShape3D" id="32"]
+size = Vector3(140, 2, 140)
+
+[sub_resource type="StandardMaterial3D" id="33"]
+albedo_color = Color(0.2, 0.23, 0.29, 1)
+roughness = 0.96
+
+[sub_resource type="StandardMaterial3D" id="34"]
+albedo_color = Color(0.46, 0.44, 0.4, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="35"]
+albedo_color = Color(0.34, 0.4, 0.33, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="36"]
+albedo_color = Color(0.62, 0.56, 0.49, 1)
+roughness = 0.82
+
+[sub_resource type="StandardMaterial3D" id="37"]
+albedo_color = Color(0.73, 0.75, 0.78, 1)
+emission_enabled = true
+emission = Color(0.22, 0.22, 0.18, 1)
+roughness = 0.62
+
+[sub_resource type="StandardMaterial3D" id="38"]
+albedo_color = Color(0.31, 0.55, 0.37, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="39"]
+albedo_color = Color(0.7, 0.79, 0.88, 1)
+roughness = 0.86
+
+[sub_resource type="StandardMaterial3D" id="40"]
+albedo_color = Color(0.52, 0.33, 0.24, 1)
+roughness = 0.8
+
+[node name="Main" type="Node3D"]
+script = ExtResource("5")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("1")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.8, -0.6, 0)
+light_energy = 1.3
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector3(0, 1.2, 6)
+
+[node name="Street" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Street"]
+shape = SubResource("3")
+position = Vector3(0, -0.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Street"]
+mesh = SubResource("2")
+surface_material_override/0 = SubResource("33")
+position = Vector3(0, -0.5, 0)
+
+[node name="WorldSafetyFloor" type="StaticBody3D" parent="."]
+position = Vector3(0, -1.0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WorldSafetyFloor"]
+shape = SubResource("32")
+
+[node name="SideAlley" type="StaticBody3D" parent="."]
+position = Vector3(-10, 0.6, -8)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SideAlley"]
+shape = SubResource("5")
+position = Vector3(0, -0.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SideAlley"]
+mesh = SubResource("4")
+surface_material_override/0 = SubResource("34")
+position = Vector3(0, -0.5, 0)
+
+[node name="PickupA" parent="." instance=ExtResource("2")]
+position = Vector3(4, 0.2, 2)
+
+[node name="PickupB" parent="." instance=ExtResource("2")]
+position = Vector3(-6, 0.2, -6)
+treat_value = 2
+
+[node name="PickupC" parent="." instance=ExtResource("2")]
+position = Vector3(6, 0.2, -10)
+treat_value = 3
+
+[node name="QuestLunchBag" parent="." instance=ExtResource("2")]
+position = Vector3(-12, 0.2, -8)
+is_quest_item = true
+
+[node name="Neighbor" parent="." instance=ExtResource("3")]
+position = Vector3(8, 0, 4)
+npc_name = "Store Clerk"
+message = "Hey Kai! I dropped my lunch in the alley."
+complete_message = "You found it! Take these treats."
+reward_treats = 4
+
+[node name="QuestMarker" type="Label3D" parent="Neighbor"]
+position = Vector3(0, 1.6, 0)
+text = "!"
+font_size = 34
+billboard = 1
+
+[node name="Yuki" parent="." instance=ExtResource("6")]
+position = Vector3(-2, 0, 5)
+dog_name = "Yuki"
+message = "Arf! Wanna sniff the park with me?"
+tint_color = Color(0.96, 0.62, 0.28, 1)
+
+[node name="YukiBubble" type="Label3D" parent="Yuki"]
+position = Vector3(0, 1.4, 0)
+text = "Yuki"
+font_size = 26
+billboard = 1
+
+[node name="IdleMotion" type="Node3D" parent="Yuki"]
+script = ExtResource("9")
+bob_speed = 1.7
+sway_speed = 1.5
+
+[node name="Saiya" parent="." instance=ExtResource("6")]
+position = Vector3(10, 0, -6)
+dog_name = "Saiya"
+message = "Woof! I found a rooftop path."
+tint_color = Color(0.2, 0.16, 0.12, 1)
+
+[node name="SaiyaBubble" type="Label3D" parent="Saiya"]
+position = Vector3(0, 1.4, 0)
+text = "Saiya"
+font_size = 26
+billboard = 1
+
+[node name="SaiyaCollar" type="MeshInstance3D" parent="Saiya"]
+mesh = SubResource("26")
+surface_material_override/0 = SubResource("27")
+position = Vector3(0, 0.95, 0.08)
+rotation = Vector3(1.57, 0, 0)
+
+[node name="IdleMotion" type="Node3D" parent="Saiya"]
+script = ExtResource("9")
+bob_speed = 2.0
+sway_speed = 1.7
+
+[node name="Storefront" type="StaticBody3D" parent="."]
+position = Vector3(8, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Storefront"]
+shape = SubResource("7")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Storefront"]
+mesh = SubResource("6")
+surface_material_override/0 = SubResource("36")
+
+[node name="Dumpster" type="StaticBody3D" parent="."]
+position = Vector3(-12, 0.6, -10)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Dumpster"]
+shape = SubResource("9")
+position = Vector3(0, 0.2, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Dumpster"]
+mesh = SubResource("8")
+surface_material_override/0 = SubResource("40")
+position = Vector3(0, 0.2, 0)
+
+[node name="PocketPark" type="StaticBody3D" parent="."]
+position = Vector3(12, 0.4, -8)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PocketPark"]
+shape = SubResource("7")
+position = Vector3(0, -0.6, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="PocketPark"]
+mesh = SubResource("6")
+surface_material_override/0 = SubResource("35")
+position = Vector3(0, -0.6, 0)
+
+[node name="RooftopA" type="StaticBody3D" parent="."]
+position = Vector3(0, 2.6, -12)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RooftopA"]
+shape = SubResource("11")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RooftopA"]
+mesh = SubResource("10")
+
+[node name="RooftopB" type="StaticBody3D" parent="."]
+position = Vector3(6, 3.4, -14)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RooftopB"]
+shape = SubResource("13")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RooftopB"]
+mesh = SubResource("12")
+
+[node name="RooftopTreat" parent="." instance=ExtResource("2")]
+position = Vector3(6, 3.8, -14)
+treat_value = 4
+
+[node name="Sidewalk" type="StaticBody3D" parent="."]
+position = Vector3(0, 0.2, 8)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Sidewalk"]
+shape = SubResource("15")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Sidewalk"]
+mesh = SubResource("14")
+surface_material_override/0 = SubResource("34")
+
+[node name="CenterLine" type="StaticBody3D" parent="."]
+position = Vector3(0, 0.02, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CenterLine"]
+shape = SubResource("25")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CenterLine"]
+mesh = SubResource("24")
+surface_material_override/0 = SubResource("37")
+
+[node name="HomeMarker" type="Label3D" parent="."]
+position = Vector3(0, 1.4, 6)
+text = "KAI'S HOME BLOCK"
+font_size = 28
+billboard = 1
+
+[node name="NorthTenthSign" type="Label3D" parent="."]
+position = Vector3(0, 1.9, 9.8)
+text = "N TENTH ST"
+font_size = 24
+billboard = 1
+
+[node name="MapleCrossingSign" type="Label3D" parent="."]
+position = Vector3(-8.8, 1.7, 1.8)
+text = "MAPLE CROSSING"
+font_size = 18
+billboard = 1
+
+[node name="ParkRouteSign" type="Label3D" parent="."]
+position = Vector3(13.8, 1.7, -2.2)
+text = "DOG PARK ->"
+font_size = 19
+billboard = 1
+
+[node name="HomeWindowSpot" type="Node3D" parent="."]
+position = Vector3(-2.1, 0, 10.9)
+
+[node name="WindowLabel" type="Label3D" parent="HomeWindowSpot"]
+position = Vector3(0, 1.3, 0)
+text = "WINDOW WATCH"
+font_size = 17
+billboard = 1
+
+[node name="BreakfastBowl" type="Node3D" parent="."]
+position = Vector3(-1.0, 0.16, 8.8)
+
+[node name="BowlMesh" type="MeshInstance3D" parent="BreakfastBowl"]
+mesh = SubResource("20")
+scale = Vector3(0.55, 0.25, 0.55)
+
+[node name="BreakfastLabel" type="Label3D" parent="BreakfastBowl"]
+position = Vector3(0, 1.2, 0)
+text = "BREAKFAST"
+font_size = 16
+billboard = 1
+
+[node name="LeashHook" type="Node3D" parent="."]
+position = Vector3(1.7, 1.1, 8.35)
+
+[node name="LeashRing" type="MeshInstance3D" parent="LeashHook"]
+mesh = SubResource("26")
+surface_material_override/0 = SubResource("27")
+rotation = Vector3(1.57, 0, 0)
+scale = Vector3(0.62, 0.62, 0.62)
+
+[node name="LeashLabel" type="Label3D" parent="LeashHook"]
+position = Vector3(0, 1.0, 0)
+text = "LEASH HOOK"
+font_size = 16
+billboard = 1
+
+[node name="FrontDoorThreshold" type="Node3D" parent="."]
+position = Vector3(0, 0, 6.7)
+
+[node name="DoorLabel" type="Label3D" parent="FrontDoorThreshold"]
+position = Vector3(0, 1.3, 0)
+text = "FRONT DOOR"
+font_size = 17
+billboard = 1
+
+[node name="FenceLeft" type="StaticBody3D" parent="."]
+position = Vector3(-16, 0.6, 2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FenceLeft"]
+shape = SubResource("17")
+position = Vector3(0, 0.6, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FenceLeft"]
+mesh = SubResource("16")
+position = Vector3(0, 0.6, 0)
+
+[node name="FenceRight" type="StaticBody3D" parent="."]
+position = Vector3(16, 0.6, 2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FenceRight"]
+shape = SubResource("17")
+position = Vector3(0, 0.6, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FenceRight"]
+mesh = SubResource("16")
+position = Vector3(0, 0.6, 0)
+
+[node name="LampPost" type="StaticBody3D" parent="."]
+position = Vector3(4, 1.6, 10)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="LampPost"]
+shape = SubResource("19")
+position = Vector3(0, 0.6, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="LampPost"]
+mesh = SubResource("18")
+position = Vector3(0, 0.6, 0)
+
+[node name="Bench" type="StaticBody3D" parent="."]
+position = Vector3(-6, 0.4, 9)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bench"]
+shape = SubResource("13")
+position = Vector3(0, -0.2, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Bench"]
+mesh = SubResource("12")
+position = Vector3(0, -0.2, 0)
+
+[node name="TrashCan" type="StaticBody3D" parent="."]
+position = Vector3(3, 0.45, 8.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TrashCan"]
+shape = SubResource("21")
+position = Vector3(0, 0.45, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="TrashCan"]
+mesh = SubResource("20")
+position = Vector3(0, 0.45, 0)
+
+[node name="Planter" type="StaticBody3D" parent="."]
+position = Vector3(11, 0.4, -4)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Planter"]
+shape = SubResource("23")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Planter"]
+mesh = SubResource("22")
+surface_material_override/0 = SubResource("38")
+
+[node name="ParkSign" type="Label3D" parent="PocketPark"]
+position = Vector3(0, 1.1, 2.1)
+text = "POPLAR PARK"
+font_size = 20
+billboard = 1
+
+[node name="SmallDogYard" type="StaticBody3D" parent="."]
+position = Vector3(18, 0.15, -8)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SmallDogYard"]
+shape = SubResource("29")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SmallDogYard"]
+mesh = SubResource("28")
+surface_material_override/0 = SubResource("38")
+
+[node name="BigDogYard" type="StaticBody3D" parent="."]
+position = Vector3(26, 0.15, -8)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BigDogYard"]
+shape = SubResource("29")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BigDogYard"]
+mesh = SubResource("28")
+surface_material_override/0 = SubResource("39")
+
+[node name="DogParkFenceLine" type="StaticBody3D" parent="."]
+position = Vector3(22, 0.55, -8)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DogParkFenceLine"]
+shape = SubResource("31")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="DogParkFenceLine"]
+mesh = SubResource("30")
+surface_material_override/0 = SubResource("37")
+
+[node name="DogParkSign" type="Label3D" parent="."]
+position = Vector3(22, 1.6, -2.5)
+text = "DOG PARK: SMALL / BIG"
+font_size = 20
+billboard = 1
+
+[node name="FenceLineSign" type="Label3D" parent="."]
+position = Vector3(22, 1.45, -8)
+text = "FENCE LINE"
+font_size = 17
+billboard = 1
+
+[node name="RivalDogA" type="Node3D" parent="."]
+position = Vector3(26.8, 0.0, -10.6)
+
+[node name="RivalDogB" type="Node3D" parent="."]
+position = Vector3(27.2, 0.0, -7.8)
+
+[node name="RivalDogC" type="Node3D" parent="."]
+position = Vector3(26.9, 0.0, -5.4)
+
+[node name="CrateStepA" type="StaticBody3D" parent="."]
+position = Vector3(-2.6, 0.4, -9.3)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CrateStepA"]
+shape = SubResource("13")
+position = Vector3(0, -0.2, 0)
+scale = Vector3(0.6, 0.8, 0.6)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CrateStepA"]
+mesh = SubResource("12")
+position = Vector3(0, -0.2, 0)
+scale = Vector3(0.6, 0.8, 0.6)
+
+[node name="CrateStepB" type="StaticBody3D" parent="."]
+position = Vector3(-1.2, 1.15, -10.4)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CrateStepB"]
+shape = SubResource("13")
+position = Vector3(0, -0.2, 0)
+scale = Vector3(0.6, 0.8, 0.6)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CrateStepB"]
+mesh = SubResource("12")
+position = Vector3(0, -0.2, 0)
+scale = Vector3(0.6, 0.8, 0.6)
+
+[node name="CrateStepC" type="StaticBody3D" parent="."]
+position = Vector3(0.2, 1.85, -11.2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CrateStepC"]
+shape = SubResource("13")
+position = Vector3(0, -0.2, 0)
+scale = Vector3(0.6, 0.8, 0.6)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CrateStepC"]
+mesh = SubResource("12")
+position = Vector3(0, -0.2, 0)
+scale = Vector3(0.6, 0.8, 0.6)
+
+[node name="BarkAudio" type="AudioStreamPlayer" parent="."]
+volume_db = -6.0
+
+[node name="TreatAudio" type="AudioStreamPlayer" parent="."]
+volume_db = -8.0
+
+[node name="HUD" parent="." instance=ExtResource("4")]
+
+[node name="HintTimer" type="Timer" parent="."]
+wait_time = 2.0
+one_shot = true
+
+[connection signal="timeout" from="HintTimer" to="." method="_on_hint_timer_timeout"]

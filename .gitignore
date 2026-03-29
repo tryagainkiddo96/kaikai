@@ -49,3 +49,9 @@ kai_companion/kai_recovered.png
 !kai_companion/assets/kai/kai_textured_rigged.glb
 !kai_companion/assets/kai/kai_textured_rigged_weightbake_test.glb
 !kai_companion/assets/kai/modelToUsed.glb
+
+# Kai Big City generated outputs
+kai-big-city/KaiBigCityGodot/.godot/
+kai-big-city/KaiBigCityGodot/build/
+kai-big-city/KaiBigCity/kaibigcity/Intermediate/
+kai-big-city/KaiBigCity/kaibigcity/Saved/
