@@ -12,6 +12,7 @@ from kai_agent.code_intelligence import CodeIntelligence
 from kai_agent.desktop_tools import DesktopTools
 from kai_agent.emotional_state import EmotionalState
 from kai_agent.inner_monologue import InnerMonologue
+from kai_agent.mood_journal import MoodJournal
 from kai_agent.relationship_model import RelationshipModel
 from kai_agent.semantic_memory import SemanticMemory
 from kai_agent.kai_identity import KAI_IDENTITY, KAI_FAMILY
@@ -131,6 +132,7 @@ class KaiAssistant:
         self.social_timing = SocialTiming(save_path=workspace / "memory" / "social_timing.json")
         self.inner_voice = InnerMonologue(save_path=workspace / "memory" / "inner_monologue.json")
         self.relationship = RelationshipModel(save_path=workspace / "memory" / "relationship.json")
+        self.mood_journal = MoodJournal(save_path=workspace / "memory" / "mood_journal.json")
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.last_tool_context = ""
         self.last_action_preview = ""
@@ -269,6 +271,14 @@ class KaiAssistant:
             self.emotions.process_event("user_was_kind")
         elif any(w in user_lower for w in ("frustrated", "annoyed", "broken", "stupid", "hate this", "angry")):
             self.emotions.process_event("user_was_frustrated")
+
+        # Record to mood journal
+        em_state = self.emotions.get_state()
+        self.mood_journal.record(
+            em_state["dimensions"],
+            em_state["mood"].get("label", "neutral") if isinstance(em_state["mood"], dict) else str(em_state["mood"]),
+            em_state.get("emoji", "🦊"),
+        )
 
         self.logger.log(
             "assistant_response",
