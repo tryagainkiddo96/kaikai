@@ -6,18 +6,97 @@ const healthLabelEl = document.querySelector("#healthLabel");
 const moodLabelEl = document.querySelector("#moodLabel");
 
 // ─── Mood System ───
-const moods = {
-  idle: { label: "Attentive", class: "mood-calm" },
-  thinking: { label: "Thinking...", class: "mood-thinking" },
-  responding: { label: "Engaged", class: "mood-alert" },
-  error: { label: "Concerned", class: "mood-alert" },
+// Kai's real emotional state (fetched from backend)
+let currentMood = { mood: "neutral", emoji: "🦊", modifiers: [] };
+
+async function fetchMood() {
+  try {
+    const resp = await fetch("/api/mood");
+    if (resp.ok) {
+      currentMood = await resp.json();
+      updateMoodDisplay();
+    }
+  } catch { /* silent */ }
+}
+
+function updateMoodDisplay() {
+  const mood = currentMood.mood || currentMood[0] || "neutral";
+  const emoji = currentMood.emoji || currentMood[1] || "🦊";
+  moodLabelEl.textContent = `${emoji} ${mood}`;
+  
+  // Set class based on valence
+  const dims = currentMood.dimensions || {};
+  const valence = dims.valence || 0;
+  if (valence > 0.3) moodLabelEl.className = "mood-happy";
+  else if (valence < -0.2) moodLabelEl.className = "mood-sad";
+  else moodLabelEl.className = "mood-neutral";
+}
+
+// Legacy mood for chat states
+const chatMoods = {
+  thinking: { label: "🤔 Thinking...", class: "mood-thinking" },
+  responding: { label: "😊 Engaged", class: "mood-calm" },
+  error: { label: "😟 Concerned", class: "mood-alert" },
 };
 
-function setMood(state) {
-  const mood = moods[state] || moods.idle;
-  moodLabelEl.textContent = mood.label;
-  moodLabelEl.className = mood.class;
+function setChatMood(state) {
+  if (state === "idle") {
+    updateMoodDisplay(); // Back to real mood
+    return;
+  }
+  const m = chatMoods[state] || chatMoods.thinking;
+  moodLabelEl.textContent = m.label;
+  moodLabelEl.className = m.class;
 }
+
+// Fetch mood periodically
+fetchMood();
+setInterval(fetchMood, 15000); // Every 15 seconds
+
+// ─── Companion Status ───
+const companionStatusEl = document.getElementById("companionStatus");
+const statusLineEl = document.getElementById("statusLine");
+
+async function fetchStatus() {
+  try {
+    const resp = await fetch("/api/status");
+    if (!resp.ok) return;
+    const status = await resp.json();
+    
+    // Show status card
+    if (companionStatusEl) companionStatusEl.style.display = "";
+    
+    // Build status line
+    let parts = [];
+    
+    if (status.emotion) {
+      const e = status.emotion;
+      parts.push(`${e.emoji || "🦊"} ${e.mood || "neutral"}`);
+    }
+    
+    if (status.timing) {
+      const t = status.timing;
+      if (t.session_duration_minutes > 1) {
+        parts.push(`${Math.round(t.session_duration_minutes)}m session`);
+      }
+    }
+    
+    if (status.memory) {
+      parts.push(`${status.memory.total_facts || 0} memories`);
+    }
+    
+    if (status.thoughts && status.thoughts.undelivered > 0) {
+      parts.push(`💭 ${status.thoughts.undelivered} thoughts`);
+    }
+    
+    if (statusLineEl && parts.length > 0) {
+      statusLineEl.textContent = parts.join(" · ");
+    }
+  } catch { /* silent */ }
+}
+
+fetchStatus();
+setInterval(fetchStatus, 30000); // Every 30 seconds
 
 // ─── Message Persistence ───
 const STORAGE_KEY = 'kai_chat_history';
@@ -100,7 +179,7 @@ function appendThinking() {
   article.append(tag, body);
   messagesEl.append(article);
   messagesEl.scrollTop = messagesEl.scrollHeight;
-  setMood("thinking");
+  setChatMood("thinking");
 }
 
 function removeThinking() {
@@ -117,7 +196,7 @@ async function pingHealth() {
     if (!response.ok) throw new Error("offline");
     healthLabelEl.textContent = "Online";
     healthLabelEl.style.color = "var(--kai-rust)";
-    setMood("idle");
+    setChatMood("idle");
     // Switch to slower polling when online
     if (healthCheckInterval) {
       clearInterval(healthCheckInterval);
@@ -154,18 +233,18 @@ async function sendPrompt(prompt) {
 
     if (!response.ok) {
       appendMessage("assistant", payload.error || "Connection lost. I'll try again.");
-      setMood("error");
+      setChatMood("error");
       return;
     }
 
     appendMessage("assistant", payload.reply);
-    setMood("responding");
+    setChatMood("responding");
     // Settle back to idle after a moment
-    setTimeout(() => setMood("idle"), 3000);
+    setTimeout(() => setChatMood("idle"), 3000);
   } catch (error) {
     removeThinking();
     appendMessage("assistant", `Lost connection: ${error.message}`);
-    setMood("error");
+    setChatMood("error");
   } finally {
     sendButtonEl.disabled = false;
     inputEl.focus();

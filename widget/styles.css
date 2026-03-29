@@ -615,3 +615,29 @@ textarea:focus {
     height: 40px;
   }
 }
+
+/* ─── Real Mood States ─── */
+.mood-happy {
+  color: #D4943A !important;
+}
+.mood-sad {
+  color: #8B7355 !important;
+}
+.mood-neutral {
+  color: #F5E6D0 !important;
+}
+.mood-thinking {
+  color: #C4783A !important;
+  animation: moodPulse 1.5s ease-in-out infinite;
+}
+.mood-calm {
+  color: #D4943A !important;
+}
+.mood-alert {
+  color: #E8A87C !important;
+}
+
+@keyframes moodPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}

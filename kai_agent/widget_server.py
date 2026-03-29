@@ -56,6 +56,37 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({"ok": True})
             return
 
+        if route == "/api/status":
+            status = {}
+            if hasattr(self.server, 'assistant'):
+                a = self.server.assistant
+                # Emotional state
+                if hasattr(a, 'emotions'):
+                    status["emotion"] = a.emotions.get_state()
+                # Relationship
+                if hasattr(a, 'relationship'):
+                    status["relationship"] = a.relationship.get_stats()
+                # Social timing
+                if hasattr(a, 'social_timing'):
+                    status["timing"] = a.social_timing.get_status()
+                # Inner monologue
+                if hasattr(a, 'inner_voice'):
+                    status["thoughts"] = a.inner_voice.get_stats()
+                # Memory
+                if hasattr(a, 'semantic_mem'):
+                    status["memory"] = a.semantic_mem.get_stats()
+            self._send_json(status)
+            return
+
+        if route == "/api/mood":
+            mood_data = {"mood": "neutral", "emoji": "🦊", "modifiers": []}
+            if hasattr(self.server, 'assistant') and hasattr(self.server.assistant, 'emotions'):
+                mood_data = self.server.assistant.emotions.get_response_color()
+                state = self.server.assistant.emotions.get_state()
+                mood_data["dimensions"] = state["dimensions"]
+            self._send_json(mood_data)
+            return
+
         target = STATIC_FILES.get(route)
         if not target:
             self.send_error(HTTPStatus.NOT_FOUND)

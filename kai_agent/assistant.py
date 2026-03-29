@@ -1622,6 +1622,35 @@ async def repl(model: str, workspace: Path) -> None:
             sem_stats = assistant.semantic_mem.get_stats()
             shell_echo(f"  Memories: {sem_stats['total_facts']} facts, {sem_stats['important_count']} important")
             continue
+        if user_input == "/status":
+            shell_echo("═" * 40)
+            shell_echo("  🦊 KAI — Companion Status")
+            shell_echo("═" * 40)
+            # Emotion
+            em = assistant.emotions.get_state()
+            shell_echo(f"\n{em['emoji']} Mood: {em['mood'].get('label','?').title()}")
+            d = em['dimensions']
+            shell_echo(f"  V:{d['valence']:+.1f} A:{d['arousal']:+.1f} Att:{d['attachment']:.1f} Cur:{d['curiosity']:.1f} Tir:{d['tiredness']:.1f}")
+            # Memory
+            sem = assistant.semantic_mem.get_stats()
+            shell_echo(f"\n🧠 Memory: {sem['total_facts']} facts ({sem['important_count']} important)")
+            # Relationship
+            rel = assistant.relationship.get_stats()
+            shell_echo(f"👤 Relationship: {rel['interactions']} interactions, {rel['days_known']} days")
+            if assistant.relationship.prefs.preferred_name:
+                shell_echo(f"  Name: {assistant.relationship.prefs.preferred_name}")
+            if assistant.relationship.prefs.active_projects:
+                shell_echo(f"  Projects: {', '.join(assistant.relationship.prefs.active_projects[-3:])}")
+            # Social timing
+            timing = assistant.social_timing.get_status()
+            shell_echo(f"\n⏰ Timing: idle {timing['idle_minutes']}m, session {timing['session_duration_minutes']}m")
+            shell_echo(f"  Quiet hours: {timing['is_quiet_hours']}, overwork: {timing['is_overwork']}")
+            # Inner monologue
+            thought = assistant.inner_voice.get_next_thought()
+            if thought:
+                shell_echo(f"\n💭 Thinking: \"{thought.content}\"")
+            shell_echo(f"\n{'═' * 40}")
+            continue
         if user_input == "/screen":
             kai_echo("[KAI] screen capture")
             shell_echo(assistant.tools.capture_screen_ocr())
