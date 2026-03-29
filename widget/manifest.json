@@ -1,0 +1,26 @@
+{
+  "name": "Kai — Your Companion",
+  "short_name": "Kai",
+  "description": "Your Shiba Inu companion, now in your pocket.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1A1612",
+  "theme_color": "#C4783A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["lifestyle", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Chat",
+      "url": "/#chat",
+      "description": "Talk to Kai"
+    }
+  ]
+}

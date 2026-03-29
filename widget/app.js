@@ -229,3 +229,152 @@ window.addEventListener('load', () => {
     document.getElementById('loadingSplash')?.classList.add('hidden');
   }, hadHistory ? 300 : 600);
 });
+
+// ─── PWA: Service Worker ───
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").then((reg) => {
+    console.log("Kai PWA: service worker registered", reg.scope);
+  }).catch((err) => {
+    console.warn("Kai PWA: service worker failed", err);
+  });
+}
+
+// ─── Device Auth ───
+const DEVICE_KEY = "kai_device";
+
+function getDevice() {
+  try {
+    const raw = localStorage.getItem(DEVICE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveDevice(device) {
+  localStorage.setItem(DEVICE_KEY, JSON.stringify(device));
+}
+
+function getDeviceType() {
+  const ua = navigator.userAgent;
+  if (/iPhone|Android.*Mobile/.test(ua)) return "phone";
+  if (/iPad|Android(?!.*Mobile)/.test(ua)) return "tablet";
+  return "browser";
+}
+
+async function registerDevice() {
+  const device = getDevice();
+  if (device) return device;
+
+  const name = `${getDeviceType()}-${Date.now().toString(36)}`;
+  try {
+    const resp = await fetch("/api/device/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_name: name, device_type: getDeviceType() }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      saveDevice(data);
+      console.log("Kai PWA: device registered", data.device_id);
+      return data;
+    }
+  } catch (e) {
+    console.warn("Kai PWA: device registration failed", e);
+  }
+  return null;
+}
+
+async function authenticateDevice() {
+  const device = getDevice();
+  if (!device) return false;
+
+  try {
+    const resp = await fetch("/api/device/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_id: device.device_id, token: device.token }),
+    });
+    return resp.ok;
+  } catch {
+    return false;
+  }
+}
+
+// Register on load
+registerDevice().then(() => authenticateDevice());
+
+// ─── Presence: Track Active Device ───
+let presenceTimer = null;
+
+function startPresence() {
+  if (presenceTimer) return;
+  presenceTimer = setInterval(async () => {
+    const device = getDevice();
+    if (!device) return;
+    try {
+      await fetch("/api/device/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ device_id: device.device_id, token: device.token }),
+      });
+    } catch { /* silent */ }
+  }, 30000);
+}
+
+// Track visibility — only send heartbeats when visible
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    startPresence();
+    pingHealth(); // immediate health check on focus
+  }
+});
+
+startPresence();
+
+// ─── Push Notifications ───
+async function enablePush() {
+  if (!("PushManager" in window)) return;
+
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: null, // Set VAPID key here when server supports it
+  });
+
+  const device = getDevice();
+  if (device) {
+    await fetch("/api/device/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        device_id: device.device_id,
+        token: device.token,
+        endpoint: JSON.stringify(sub.toJSON()),
+      }),
+    });
+  }
+}
+
+// Request push permission after a few interactions
+let interactionCount = 0;
+formEl.addEventListener("submit", () => {
+  interactionCount++;
+  if (interactionCount === 3 && "Notification" in window) {
+    Notification.requestPermission().then((perm) => {
+      if (perm === "granted") enablePush();
+    });
+  }
+});
+
+// ─── Install Prompt ───
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Could show an "Install Kai" button here
+  console.log("Kai PWA: install prompt available");
+});
+
+window.addEventListener("appinstalled", () => {
+  console.log("Kai PWA: installed");
+  deferredPrompt = null;
+});

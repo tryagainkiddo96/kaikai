@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from kai_agent.assistant import KaiAssistant
+from kai_agent.bridge_auth import KaiBridgeAuth
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +20,8 @@ STATIC_FILES = {
     "/index.html": ("index.html", "text/html; charset=utf-8"),
     "/styles.css": ("styles.css", "text/css; charset=utf-8"),
     "/app.js": ("app.js", "application/javascript; charset=utf-8"),
+    "/sw.js": ("sw.js", "application/javascript; charset=utf-8"),
+    "/manifest.json": ("manifest.json", "application/json"),
     "/kai-logo.svg": ("kai-logo.svg", "image/svg+xml"),
     "/paw.svg": ("paw.svg", "image/svg+xml"),
     "/favicon.svg": ("favicon.svg", "image/svg+xml"),
@@ -29,6 +32,7 @@ class KaiWidgetServer(ThreadingHTTPServer):
     def __init__(self, server_address, handler_class, assistant: KaiAssistant) -> None:
         super().__init__(server_address, handler_class)
         self.assistant = assistant
+        self.auth = KaiBridgeAuth(save_path=assistant.workspace / "memory" / "devices.json")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -67,6 +71,50 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         route = urlparse(self.path).path
+
+        length = int(self.headers.get("Content-Length", "0"))
+        raw_body = self.rfile.read(length)
+        payload = json.loads(raw_body.decode("utf-8") or "{}")
+
+        # Device registration
+        if route == "/api/device/register":
+            name = payload.get("device_name", "unknown")
+            dtype = payload.get("device_type", "browser")
+            result = self.server.auth.register_device(name, dtype)
+            self._send_json(result)
+            return
+
+        # Device authentication
+        if route == "/api/device/auth":
+            device_id = payload.get("device_id", "")
+            token = payload.get("token", "")
+            ok = self.server.auth.authenticate(device_id, token)
+            self._send_json({"ok": ok}, HTTPStatus.OK if ok else HTTPStatus.UNAUTHORIZED)
+            return
+
+        # Device heartbeat
+        if route == "/api/device/heartbeat":
+            device_id = payload.get("device_id", "")
+            token = payload.get("token", "")
+            if self.server.auth.authenticate(device_id, token):
+                self.server.auth.set_active(device_id, "ws")
+                self._send_json({"ok": True})
+            else:
+                self._send_json({"ok": False}, HTTPStatus.UNAUTHORIZED)
+            return
+
+        # Push endpoint registration
+        if route == "/api/device/push":
+            device_id = payload.get("device_id", "")
+            token = payload.get("token", "")
+            endpoint = payload.get("endpoint", "")
+            if self.server.auth.authenticate(device_id, token):
+                self.server.auth.set_push_endpoint(device_id, endpoint)
+                self._send_json({"ok": True})
+            else:
+                self._send_json({"ok": False}, HTTPStatus.UNAUTHORIZED)
+            return
+
         if route != "/api/chat":
             self.send_error(HTTPStatus.NOT_FOUND)
             return
