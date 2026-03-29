@@ -127,6 +127,7 @@ class KaiAssistant:
                 recovery_plan=self.last_recovery_plan,
             )
             await send_event("kai_wag_tail")
+            self.tts.speak(deterministic_reply)
             return deterministic_reply
 
         direct_action_hint = ""
@@ -168,6 +169,7 @@ class KaiAssistant:
             recovery_plan=self.last_recovery_plan,
         )
         await send_event("kai_wag_tail")
+        self.tts.speak(reply)
         return reply
 
     def _fallback_response(self, user_input: str, prompt: str, primary_error: str) -> str:
@@ -1434,6 +1436,19 @@ async def repl(model: str, workspace: Path) -> None:
             target = user_input[len("/ls") :].strip() or "."
             kai_echo("[KAI] listing files")
             shell_echo(assistant.tools.list_files(target))
+            continue
+        if user_input.startswith("/voice"):
+            sub = user_input[len("/voice") :].strip().lower()
+            if sub in ("on", "1", "true"):
+                assistant.tts.enabled = True
+                kai_echo("[KAI] voice on")
+                assistant.tts.speak("Voice is on.")
+            elif sub in ("off", "0", "false"):
+                kai_echo("[KAI] voice off")
+                assistant.tts.enabled = False
+            else:
+                state = "on" if assistant.tts.enabled else "off"
+                kai_echo(f"[KAI] voice is {state}. Use /voice on or /voice off")
             continue
         if user_input.startswith("/autonomy"):
             subcommand = user_input[len("/autonomy") :].strip().lower()
