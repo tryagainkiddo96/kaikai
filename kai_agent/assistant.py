@@ -10,6 +10,8 @@ from kai_agent.autonomy import KaiAutonomy
 from kai_agent.bridge_client import send_event
 from kai_agent.code_intelligence import CodeIntelligence
 from kai_agent.desktop_tools import DesktopTools
+from kai_agent.emotional_state import EmotionalState
+from kai_agent.semantic_memory import SemanticMemory
 from kai_agent.kai_signals import KaiSignals
 from kai_agent.kai_stt import KaiSTT
 from kai_agent.kai_tts import KaiTTS
@@ -104,6 +106,8 @@ class KaiAssistant:
         self.planner = TaskPlanner(workspace, tools=self.tools)
         self.autonomy = KaiAutonomy(workspace=workspace, memory=self.memory, tools=self.tools, client=self.client)
         self.code_intel = CodeIntelligence()
+        self.emotions = EmotionalState(save_path=workspace / "memory" / "emotional_state.json")
+        self.semantic_mem = SemanticMemory(save_path=workspace / "memory" / "semantic_memory.json")
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.last_tool_context = ""
         self.last_action_preview = ""
@@ -113,13 +117,33 @@ class KaiAssistant:
 
     def build_messages(self, user_input: str) -> list[dict]:
         memory_context = self.memory.build_memory_context()
+        # Semantic memory — relevant facts about the user
+        semantic_context = self.semantic_mem.build_context_for_prompt(user_input)
+        # Emotional state — how Kai should feel in this response
+        emotion_color = self.emotions.get_response_color()
+        mood_line = emotion_color["brief_mood"]
+        emotion_modifiers = "\n".join(emotion_color["modifiers"]) if emotion_color["modifiers"] else ""
+
+        system_parts = [memory_context]
+        if semantic_context:
+            system_parts.append(semantic_context)
+        if emotion_modifiers:
+            system_parts.append(f"Your current emotional state ({mood_line}):\n{emotion_modifiers}")
+
         return self.history + [
-            {"role": "system", "content": memory_context},
+            {"role": "system", "content": "\n\n".join(p for p in system_parts if p)},
             {"role": "user", "content": user_input},
         ]
 
     async def ask(self, user_input: str) -> str:
         self.memory.append_session("user", user_input)
+
+        # Emotional: user spoke
+        self.emotions.process_event("user_spoke")
+
+        # Semantic: learn from this message
+        self.semantic_mem.learn_from_conversation(user_input)
+
         await send_event("kai_thinking")
         tool_context = self._maybe_run_tools(user_input)
         self.last_tool_context = tool_context
@@ -185,6 +209,21 @@ class KaiAssistant:
         self.history.append({"role": "user", "content": user_input})
         self.history.append({"role": "assistant", "content": reply})
         self.memory.append_session("assistant", reply)
+
+        # Emotional processing based on interaction outcome
+        if tool_context:
+            if "failed" in tool_context.lower() or "error" in tool_context.lower():
+                self.emotions.process_event("task_failed")
+            elif "success" in tool_context.lower() or "completed" in tool_context.lower():
+                self.emotions.process_event("task_completed")
+
+        # Check user sentiment (simple)
+        user_lower = user_input.lower()
+        if any(w in user_lower for w in ("thank", "thanks", "good boy", "good job", "nice", "awesome", "great")):
+            self.emotions.process_event("user_was_kind")
+        elif any(w in user_lower for w in ("frustrated", "annoyed", "broken", "stupid", "hate this", "angry")):
+            self.emotions.process_event("user_was_frustrated")
+
         self.logger.log(
             "assistant_response",
             user_input=user_input,
@@ -1505,6 +1544,7 @@ async def repl(model: str, workspace: Path) -> None:
     kai_echo("[KAI] Browser: browse <url>, show links, click link <text>, download file <url>, fill form: key=val")
     kai_echo("[KAI] Documents: show documents, find document <name>, read document <path>, organize downloads")
     kai_echo("[KAI] Code intel: /analyze <file_or_code>, /generate func|class|test <spec>, scan project")
+    kai_echo("[KAI] Companion: /mood, /remember <text>, /memory")
     while True:
         try:
             user_input = input("\nYou> ").strip()
@@ -1524,6 +1564,17 @@ async def repl(model: str, workspace: Path) -> None:
         if user_input == "/memory":
             kai_echo("[KAI] memory")
             shell_echo(assistant.memory.build_memory_context())
+            continue
+        if user_input == "/mood":
+            state = assistant.emotions.get_state()
+            mood = state["mood"]
+            dims = state["dimensions"]
+            shell_echo(f"{mood['emoji']} {mood['label'].title()}")
+            shell_echo(f"  Valence: {dims['valence']:+.2f}  Arousal: {dims['arousal']:+.2f}")
+            shell_echo(f"  Attachment: {dims['attachment']:.2f}  Concern: {dims['concern']:.2f}")
+            shell_echo(f"  Curiosity: {dims['curiosity']:.2f}  Tiredness: {dims['tiredness']:.2f}")
+            sem_stats = assistant.semantic_mem.get_stats()
+            shell_echo(f"  Memories: {sem_stats['total_facts']} facts, {sem_stats['important_count']} important")
             continue
         if user_input == "/screen":
             kai_echo("[KAI] screen capture")
