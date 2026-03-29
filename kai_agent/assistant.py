@@ -9,6 +9,7 @@ from pathlib import Path
 from kai_agent.autonomy import KaiAutonomy
 from kai_agent.bridge_client import send_event
 from kai_agent.desktop_tools import DesktopTools
+from kai_agent.kai_tts import KaiTTS
 from kai_agent.logger import KaiLogger
 from kai_agent.memory import KaiMemory
 from kai_agent.ollama_client import OllamaClient
@@ -66,6 +67,7 @@ class KaiAssistant:
         self.memory = KaiMemory(workspace / "memory")
         self.logger = KaiLogger(workspace / "logs")
         self.client = OllamaClient(model=model)
+        self.tts = KaiTTS(enabled=os.environ.get("KAI_TTS", "").lower() in ("1", "true", "yes"))
         self.fallback_timeout = int(os.environ.get("KAI_FALLBACK_MODEL_TIMEOUT", "45"))
         fallback_csv = os.environ.get("KAI_FALLBACK_MODELS", "mistral:latest,llama2:latest")
         self.fallback_models = [
