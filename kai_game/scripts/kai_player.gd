@@ -47,6 +47,7 @@ signal enemy_hit(damage: int)
 
 func _ready() -> void:
 	hp = max_hp
+	add_to_group("player")
 	hp_changed.emit(hp, max_hp)
 
 

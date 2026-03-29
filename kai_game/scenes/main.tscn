@@ -1,30 +1,47 @@
-[gd_scene load_steps=5 format=3 uid="uid://main_scene"]
+[gd_scene load_steps=6 format=3 uid="uid://main_pb"]
 
 [ext_resource type="Script" path="res://scripts/kai_player.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/main.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/kai_hud.gd" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/bug_enemy.tscn" id="4"]
+[ext_resource type="Script" path="res://scripts/poplar_bluff_map.gd" id="5"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
-radius = 16.0
+radius = 12.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_map_boundary"]
+size = Vector2(3000.0, 3500.0)
 
 [node name="Main" type="Node2D"]
 script = ExtResource("2")
 enemy_scene = ExtResource("4")
 
+[node name="PoplarBluffMap" type="Node2D" parent="."]
+script = ExtResource("5")
+
+[node name="MapBoundary" type="StaticBody2D" parent="PoplarBluffMap"]
+collision_layer = 8
+collision_mask = 0
+
+[node name="BoundaryShape" type="CollisionShape2D" parent="PoplarBluffMap/MapBoundary"]
+shape = SubResource("RectangleShape2D_map_boundary")
+
 [node name="KaiPlayer" type="CharacterBody2D" parent="."]
-position = Vector2(640, 360)
+position = Vector2(0, 0)
 collision_layer = 1
-collision_mask = 9
+collision_mask = 12
 script = ExtResource("1")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="KaiPlayer"]
 shape = SubResource("CircleShape2D_player")
 
-[node name="Sprite2D" type="Sprite2D" parent="KaiPlayer"]
+[node name="KaiSprite" type="Sprite2D" parent="KaiPlayer"]
 modulate = Color(0.77, 0.47, 0.23, 1)
 texture = PlaceholderTexture2D.new()
-placeholder_size = Vector2(32, 32)
+placeholder_size = Vector2(28, 28)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(1.5, 1.5)
 
 [node name="KaiHUD" type="CanvasLayer" parent="."]
 script = ExtResource("3")
