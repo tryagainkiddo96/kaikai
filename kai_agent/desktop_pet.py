@@ -22,89 +22,114 @@ from typing import Optional, Callable
 # ---------------------------------------------------------------------------
 
 def draw_shiba_sitting(size: int = 64) -> list:
-    """Draw a pixel-art Shiba sitting. Returns list of (x, y, color) tuples."""
-    pixels = []
-    # Simple pixel art Shiba face/body
-    # Charcoal (#1A1612) for ears/nose/eyes, rust (#C4783A) for face, cream (#F5E6D0) for muzzle
-    
+    """Draw a pixel-art Shiba sitting facing forward."""
     template = [
-        "    ..XX..    ",
-        "   ..XXXX..   ",
-        "  XX.XXXX.XX  ",
-        "  XX.FFFF.XX  ",
+        "     XXXX     ",
+        "    XXXXXX    ",
+        "   XX.XX.XX   ",
+        "   X.FFFF.X   ",
         "   .FFFFFF.   ",
-        "   .FCCFF.    ",
-        "   .FCCEF.    ",
-        "    .FFF.     ",
-        "     ..       ",
-        "   .FFFF.     ",
-        "   FFFFFF.    ",
-        "   .FFFF.     ",
-        "    ....      ",
+        "   .FCCCCF.   ",
+        "   .FCnnCF.   ",
+        "    .FCCF.    ",
+        "     .FF.     ",
+        "    .FFFF.    ",
+        "   .FFFFFF.   ",
+        "   .FFFFFF.   ",
+        "    .FFFF.    ",
+        "     ....     ",
     ]
-    
     colors = {
-        'X': '#1A1612',  # charcoal (ears, outline)
-        'F': '#C4783A',  # rust (face/body)
-        'C': '#F5E6D0',  # cream (muzzle)
-        'E': '#1A1612',  # nose
-        '.': None,       # transparent
+        'X': '#1A1612',  # charcoal ears
+        'F': '#C4783A',  # rust body
+        'C': '#F5E6D0',  # cream muzzle/chest
+        'n': '#1A1612',  # nose
+        '.': None,
     }
-    
     return template, colors
 
 
 def draw_shiba_walking(size: int = 64) -> list:
-    """Draw a pixel-art Shiba walking (legs offset)."""
+    """Draw a pixel-art Shiba walking, legs in motion."""
     template = [
-        "    ..XX..    ",
-        "   ..XXXX..   ",
-        "  XX.XXXX.XX  ",
-        "  XX.FFFF.XX  ",
+        "     XXXX     ",
+        "    XXXXXX    ",
+        "   XX.XX.XX   ",
+        "   X.FFFF.X   ",
         "   .FFFFFF.   ",
-        "   .FCCFF.    ",
-        "   .FCCEF.    ",
-        "    .FFF.     ",
-        "     ..       ",
-        "   .FFFF.     ",
-        "  .FFFFFF.    ",
-        " .F.    .F.   ",
-        " ..      ..   ",
+        "   .FCCCCF.   ",
+        "   .FCnnCF.   ",
+        "    .FCCF.    ",
+        "     .FF.     ",
+        "    .FFFF.    ",
+        "   .FFFFFF.   ",
+        "  .F.    .F.  ",
+        "  F.      .F  ",
+        "  ..      ..  ",
     ]
-    
     colors = {
         'X': '#1A1612',
         'F': '#C4783A',
         'C': '#F5E6D0',
-        'E': '#1A1612',
+        'n': '#1A1612',
         '.': None,
     }
     return template, colors
 
 
 def draw_shiba_sleeping(size: int = 64) -> list:
+    """Draw a pixel-art Shiba curled up sleeping."""
     template = [
         "              ",
-        "              ",
-        "    ..XX..    ",
-        "   ..XXXX..   ",
-        "  XX.FFFF.XX  ",
+        "     XXXX     ",
+        "    X....X    ",
+        "   XX.FFFF.X  ",
         "   .FFFFFF.   ",
-        "   .FCCFF.    ",
-        "    .FFF.     ",
+        "   .FCCCCF.   ",
+        "    .FCCF.    ",
+        "   FFFFFFFF   ",
         "   FFFFFFFF   ",
         "   FFFFFFFF   ",
         "    FFFFFF    ",
-        "     ....     ",
-        "    Z  z      ",
+        "     Zzz      ",
+        "              ",
     ]
     colors = {
         'X': '#1A1612',
         'F': '#C4783A',
         'C': '#F5E6D0',
-        '.': None,
         'Z': '#D4943A',
         'z': '#D4943A',
+        '.': None,
+    }
+    return template, colors
+
+
+def draw_shiba_barking(size: int = 64) -> list:
+    """Draw a pixel-art Shiba barking."""
+    template = [
+        "     XXXX     ",
+        "    XXXXXX    ",
+        "   XX.XX.XX   ",
+        "   X.FFFF.X   ",
+        "   .FFFFFF.   ",
+        "   .FCCCCF.   ",
+        "   .FCnnCF.   ",
+        "    .FCCF.    ",
+        "     .FF.!    ",
+        "    .FFFF.    ",
+        "   .FFFFFF.   ",
+        "   .FFFFFF.   ",
+        "    .FFFF.    ",
+        "     ....     ",
+    ]
+    colors = {
+        'X': '#1A1612',
+        'F': '#C4783A',
+        'C': '#F5E6D0',
+        'n': '#1A1612',
+        '!': '#D4943A',  # bark effect
+        '.': None,
     }
     return template, colors
 
@@ -249,6 +274,7 @@ class KaiPet:
             self.IDLE: self._create_sprite(draw_shiba_sitting()),
             self.WALKING: self._create_sprite(draw_shiba_walking()),
             self.SLEEPING: self._create_sprite(draw_shiba_sleeping()),
+            self.BARKING: self._create_sprite(draw_shiba_barking()),
         }
         
         self.current_sprite = self.canvas.create_image(40, 40, image=self.sprites[self.IDLE])

@@ -22,10 +22,32 @@ import threading
 class KaiTTS:
     def __init__(self, enabled: bool = True, rate: int = 160, voice: str = ""):
         self.enabled = enabled
+        self.base_rate = rate
         self.rate = rate
         self.voice = voice
         self._backend = self._detect_backend()
         self._speaking = False
+        self._current_mood = "neutral"
+
+    def set_mood(self, mood: str) -> None:
+        """Adjust voice parameters based on emotional mood."""
+        self._current_mood = mood
+        mood_profiles = {
+            "happy":     {"rate_mod": 15,  "pitch_mod": 5,  "amplitude_mod": 10},
+            "excited":   {"rate_mod": 25,  "pitch_mod": 10, "amplitude_mod": 15},
+            "sad":       {"rate_mod": -20, "pitch_mod": -5, "amplitude_mod": -10},
+            "worried":   {"rate_mod": -5,  "pitch_mod": 0,  "amplitude_mod": 0},
+            "tired":     {"rate_mod": -25, "pitch_mod": -8, "amplitude_mod": -15},
+            "sleepy":    {"rate_mod": -30, "pitch_mod": -10,"amplitude_mod": -20},
+            "curious":   {"rate_mod": 10,  "pitch_mod": 3,  "amplitude_mod": 5},
+            "proud":     {"rate_mod": 5,   "pitch_mod": 2,  "amplitude_mod": 10},
+            "anxious":   {"rate_mod": 15,  "pitch_mod": 5,  "amplitude_mod": 5},
+            "neutral":   {"rate_mod": 0,   "pitch_mod": 0,  "amplitude_mod": 0},
+        }
+        profile = mood_profiles.get(mood, mood_profiles["neutral"])
+        self.rate = max(80, min(250, self.base_rate + profile["rate_mod"]))
+        self._pitch_mod = profile["pitch_mod"]
+        self._amp_mod = profile["amplitude_mod"]
 
     def _detect_backend(self) -> str:
         """Detect available TTS backend."""
@@ -82,7 +104,9 @@ class KaiTTS:
                     f"$synth.Speak('{escaped}')"
                 ]
             elif self._backend in ("espeak-ng", "espeak"):
-                cmd = [self._backend, "-s", str(self.rate), "-a", "120", text]
+                pitch = 50 + getattr(self, '_pitch_mod', 0)
+                amp = 120 + getattr(self, '_amp_mod', 0)
+                cmd = [self._backend, "-s", str(self.rate), "-p", str(pitch), "-a", str(amp), text]
             elif self._backend == "say":
                 cmd = ["say", "-r", str(self.rate), text]
             else:

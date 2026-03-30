@@ -220,6 +220,7 @@ class KaiAssistant:
                 recovery_plan=self.last_recovery_plan,
             )
             await send_event("kai_wag_tail")
+            self.tts.set_mood(self.emotions.derive_mood()[0])
             self.tts.speak(deterministic_reply)
             return deterministic_reply
 
@@ -290,6 +291,7 @@ class KaiAssistant:
             recovery_plan=self.last_recovery_plan,
         )
         await send_event("kai_wag_tail")
+        self.tts.set_mood(self.emotions.derive_mood()[0])
         self.tts.speak(reply)
         return reply
 
