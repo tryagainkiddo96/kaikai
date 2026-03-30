@@ -7,7 +7,7 @@ const KAI_BARK_2_PATH := "res://assets/kai/audio/kai_bark_2.wav"
 const KAI_HOLOGRAM_SHADER_PATH := "res://assets/kai/kai_hologram.gdshader"
 const KAI_HOLOGRAM_CANVAS_SHADER_PATH := "res://assets/kai/kai_hologram_canvas.gdshader"
 const KAI_3D_MODEL_PATHS := [
-    "res://assets/kai/kai_textured.glb",
+    "res://assets/kai/kai_textured_rigged.glb",
 ]
 const KAI_IDLE_IMAGE_PATH := "res://assets/kai/kai_photo_clean.png"
 const KAI_ALERT_IMAGE_PATH := "res://assets/kai/kai_alert_pose.png"
@@ -33,8 +33,8 @@ const INTERACTION_COOLDOWN_MAX := 6.5
 const BARK_ENABLED := false
 
 @export var ollama_model: String = "qwen3:4b-q4_K_M"
-@export var use_hologram_avatar: bool = true
-@export var prefer_3d_avatar: bool = false
+@export var use_hologram_avatar: bool = false
+@export var prefer_3d_avatar: bool = true
 
 @onready var avatar: TextureRect = $Avatar
 @onready var avatar_shadow: TextureRect = $AvatarShadow

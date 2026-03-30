@@ -70,7 +70,7 @@ const BARK_COOLDOWN_MAX := 11.5
 
 @export var ollama_model: String = "qwen3:4b-q4_K_M"
 @export var use_hologram_material: bool = false
-@export var prefer_rigged_avatar: bool = false
+@export var prefer_rigged_avatar: bool = true
 
 @onready var model_anchor: Node3D = $World/ModelAnchor
 @onready var bubble: PanelContainer = $UI/Root/Bubble
