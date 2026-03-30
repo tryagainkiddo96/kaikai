@@ -1,0 +1,8 @@
+.ruff_cache/
+__pycache__/
+*.pyc
+_remote_kaikai/
+external/W0rm-Gpt-main/nul
+external/W0rm-Gpt-main/data/*.db
+external/W0rm-Gpt-main/**/*.pyd
+external/W0rm-Gpt-main/**/__pycache__/

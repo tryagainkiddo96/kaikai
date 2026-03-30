@@ -1,0 +1,8 @@
+Requirement already satisfied: PyQt5 in C:\Users\7nujy6xc\AppData\Local\Programs\Python\Python312\Lib\site-packages (5.15.11)
+Requirement already satisfied: requests in C:\Users\7nujy6xc\AppData\Local\Programs\Python\Python312\Lib\site-packages (2.31.0)
+Requirement already satisfied: PyQt5-sip<13,>=12.15 in C:\Users\7nujy6xc\AppData\Local\Programs\Python\Python312\Lib\site-packages (from PyQt5) (12.18.0)
+Requirement already satisfied: PyQt5-Qt5<5.16.0,>=5.15.2 in C:\Users\7nujy6xc\AppData\Local\Programs\Python\Python312\Lib\site-packages (from PyQt5) (5.15.2)
+Requirement already satisfied: charset-normalizer<4,>=2 in C:\Users\7nujy6xc\AppData\Local\Programs\Python\Python312\Lib\site-packages (from requests) (3.4.4)
+Requirement already satisfied: idna<4,>=2.5 in C:\Users\7nujy6xc\AppData\Local\Programs\Python\Python312\Lib\site-packages (from requests) (3.11)
+Requirement already satisfied: urllib3<3,>=1.21.1 in C:\Users\7nujy6xc\AppData\Local\Programs\Python\Python312\Lib\site-packages (from requests) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in C:\Users\7nujy6xc\AppData\Local\Programs\Python\Python312\Lib\site-packages (from requests) (2026.2.25)
