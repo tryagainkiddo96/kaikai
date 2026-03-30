@@ -5,13 +5,38 @@ const sendButtonEl = document.querySelector("#sendButton");
 const healthLabelEl = document.querySelector("#healthLabel");
 const moodLabelEl = document.querySelector("#moodLabel");
 
+// ─── Request deduplication ───
+// Prevent multiple simultaneous fetches from piling up
+const inflight = {};
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+  // Cancel previous request to same URL
+  if (inflight[url]) {
+    inflight[url].abort();
+  }
+  const controller = new AbortController();
+  inflight[url] = controller;
+  
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    delete inflight[url];
+    return resp;
+  } catch (e) {
+    clearTimeout(timer);
+    delete inflight[url];
+    throw e;
+  }
+}
+
 // ─── Mood System ───
 // Kai's real emotional state (fetched from backend)
 let currentMood = { mood: "neutral", emoji: "🦊", modifiers: [] };
 
 async function fetchMood() {
   try {
-    const resp = await fetch("/api/mood");
+    const resp = await fetchWithTimeout("/api/mood");
     if (resp.ok) {
       currentMood = await resp.json();
       updateMoodDisplay();
