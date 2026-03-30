@@ -9,6 +9,12 @@
     "primary_url": "http://127.0.0.1:8127/api/chat",
     "fallback_url": "http://127.0.0.1:11434/api/chat"
   },
+  "endpoints": {
+    "health": "/api/health",
+    "mood": "/api/mood",
+    "status": "/api/status",
+    "pending": "/api/pending"
+  },
   "identity": {
     "name": "Kai",
     "species": "black-and-tan male Shiba Inu desktop companion"
