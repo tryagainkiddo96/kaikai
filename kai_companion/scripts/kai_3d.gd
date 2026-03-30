@@ -228,6 +228,7 @@ var _ear_twitch_side := 0.0
 
 
 func _ready() -> void:
+    _load_config()
     _configure_desktop_window()
     _load_3d_model()
     _load_companion_audio()
@@ -248,6 +249,18 @@ func _ready() -> void:
     _rest_duration = randf_range(4.5, 7.5)
     _walk_target = Vector2(DisplayServer.window_get_position())
     _update_mood_display("Attentive")
+
+
+func _load_config() -> void:
+    var config_path = "res://../../../shared/kai_config.json"
+    if FileAccess.file_exists(config_path):
+        var config_text = FileAccess.get_file_as_string(config_path)
+        var config = JSON.parse_string(config_text)
+        if config:
+            use_hologram_material = config.avatar.use_hologram
+            prefer_rigged_avatar = config.avatar.prefer_rigged
+            # Update chat URLs if needed
+            # For now, keep hardcoded but could be extended
 
 
 func _process(delta: float) -> void:

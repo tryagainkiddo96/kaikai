@@ -124,6 +124,7 @@ const OFFLINE_REPLY_LINES := [
 
 
 func _ready() -> void:
+    _load_config()
     custom_minimum_size = WINDOW_SIZE
     _configure_desktop_window()
     if prefer_3d_avatar:
@@ -148,6 +149,16 @@ func _ready() -> void:
     if request.has_method("set_timeout"):
         request.set_timeout(25)
     _update_avatar_pose()
+
+
+func _load_config() -> void:
+    var config_path = "res://../../../shared/kai_config.json"
+    if FileAccess.file_exists(config_path):
+        var config_text = FileAccess.get_file_as_string(config_path)
+        var config = JSON.parse_string(config_text)
+        if config:
+            use_hologram_avatar = config.avatar.use_hologram
+            prefer_3d_avatar = config.avatar.prefer_rigged  # Note: using prefer_rigged for 3d
 
 
 func _exit_tree() -> void:
