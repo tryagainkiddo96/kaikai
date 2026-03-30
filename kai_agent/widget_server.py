@@ -33,6 +33,7 @@ class KaiWidgetServer(ThreadingHTTPServer):
         super().__init__(server_address, handler_class)
         self.assistant = assistant
         self.auth = KaiBridgeAuth(save_path=assistant.workspace / "memory" / "devices.json")
+        self.pending_messages: list[dict] = []  # Proactive messages waiting for widget
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -85,6 +86,14 @@ class Handler(BaseHTTPRequestHandler):
                 state = self.server.assistant.emotions.get_state()
                 mood_data["dimensions"] = state["dimensions"]
             self._send_json(mood_data)
+            return
+
+        if route == "/api/pending":
+            messages = []
+            if hasattr(self.server, 'assistant') and hasattr(self.server.assistant, 'pending_messages'):
+                messages = list(self.server.assistant.pending_messages)
+                self.server.assistant.pending_messages.clear()
+            self._send_json({"messages": messages})
             return
 
         target = STATIC_FILES.get(route)

@@ -424,14 +424,12 @@ class KaiWatcher:
             # Log to session
             if hasattr(self.assistant, 'memory'):
                 self.assistant.memory.append_session("assistant", f"[proactive] {message}")
-            # Emit event for desktop panel / widget
-            from kai_agent.bridge_client import send_event
-            import asyncio
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    loop.create_task(send_event("kai_proactive", message=message))
-            except Exception:
-                pass
+            # Add to pending queue for widget
+            if hasattr(self.assistant, 'pending_messages'):
+                self.assistant.pending_messages.append({
+                    "message": message,
+                    "timestamp": time.time(),
+                    "type": "proactive",
+                })
         except Exception:
             pass

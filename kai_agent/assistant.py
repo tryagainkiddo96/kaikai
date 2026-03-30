@@ -133,6 +133,7 @@ class KaiAssistant:
         self.inner_voice = InnerMonologue(save_path=workspace / "memory" / "inner_monologue.json")
         self.relationship = RelationshipModel(save_path=workspace / "memory" / "relationship.json")
         self.mood_journal = MoodJournal(save_path=workspace / "memory" / "mood_journal.json")
+        self.pending_messages: list[dict] = []  # Proactive messages for widget
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.last_tool_context = ""
         self.last_action_preview = ""

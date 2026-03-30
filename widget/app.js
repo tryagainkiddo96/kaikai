@@ -98,6 +98,25 @@ async function fetchStatus() {
 fetchStatus();
 setInterval(fetchStatus, 30000); // Every 30 seconds
 
+// ─── Proactive Messages (Kai speaks up) ───
+async function checkPending() {
+  try {
+    const resp = await fetch("/api/pending");
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data.messages && data.messages.length > 0) {
+      for (const msg of data.messages) {
+        appendMessage("assistant", typeof msg === "string" ? msg : msg.message || JSON.stringify(msg));
+      }
+      setChatMood("responding");
+      setTimeout(() => setChatMood("idle"), 3000);
+    }
+  } catch { /* silent */ }
+}
+
+checkPending();
+setInterval(checkPending, 10000); // Check every 10 seconds
+
 // ─── Message Persistence ───
 const STORAGE_KEY = 'kai_chat_history';
 const MAX_STORED = 50;
