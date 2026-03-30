@@ -1,0 +1,21 @@
+{
+  "avatar": {
+    "primary_model": "res://assets/kai/kai_textured_rigged.glb",
+    "fallback_model": "res://assets/kai/kai_textured.glb",
+    "use_hologram": false,
+    "prefer_rigged": true
+  },
+  "chat": {
+    "primary_url": "http://127.0.0.1:8127/api/chat",
+    "fallback_url": "http://127.0.0.1:11434/api/chat"
+  },
+  "identity": {
+    "name": "Kai",
+    "species": "black-and-tan male Shiba Inu desktop companion"
+  },
+  "behavior": {
+    "patrol_enabled": true,
+    "sniff_enabled": true,
+    "bark_enabled": true
+  }
+}
