@@ -34,8 +34,8 @@ const INTERACTION_COOLDOWN_MAX := 6.5
 const BARK_ENABLED := false
 
 @export var ollama_model: String = "qwen3:4b-q4_K_M"
-@export var use_hologram_avatar: bool = true
-@export var prefer_3d_avatar: bool = false
+@export var use_hologram_avatar: bool = false
+@export var prefer_3d_avatar: bool = true
 
 @onready var avatar: TextureRect = $Avatar
 @onready var avatar_shadow: TextureRect = $AvatarShadow
@@ -352,7 +352,9 @@ func _load_3d_model() -> void:
 
 func _use_rigged_avatar() -> bool:
     var value := OS.get_environment(KAI_RIGGED_AVATAR_ENV).strip_edges().to_lower()
-    return value == "1" or value == "true" or value == "yes" or value == "on"
+    if value.is_empty():
+        return true
+    return not (value == "0" or value == "false" or value == "no" or value == "off")
 
 
 func _get_model_paths() -> Array[String]:

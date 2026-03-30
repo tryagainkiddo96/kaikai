@@ -87,21 +87,33 @@ Kai companion notes:
 - Default model in the companion is `qwen3:4b-q4_K_M` for better performance on lower-RAM systems.
 - Runtime coat markings are currently driven by `kai_companion/assets/kai/kai_markings.gdshader` for cleaner Kai-like black/tan/cream regions without needing a finished hand-painted texture.
 
-Kai 3D texturing workflow:
+Kai 3D texturing and rigging workflow:
 
 - `tools/prepare_kai_texture_workspace.py` copies Kai photo references, the source model, and extracted viewer frames into `kai_companion/assets/kai/reference`.
 - `tools/setup_kai_blender_scene.py` creates `kai_companion/assets/kai/kai_texture_workspace.blend` with the model, base material, lighting, and reference boards.
 - `tools/open_kai_texture_workspace.ps1` opens that Blender workspace directly.
 - `tools/export_kai_runtime_glb.py` exports the active textured Blender mesh to `kai_companion/assets/kai/kai_textured.glb`.
+- `tools/bake_kai_texture.py` bakes the cleaned Kai photo onto the UVs and exports `kai_baked_albedo.png` plus `kai_textured_baked.glb`.
+- `tools/prepare_kai_rig_runtime.py` imports the Mixamo-rigged FBX source, reapplies the baked texture, validates the armature, and exports `kai_companion/assets/kai/kai_textured_rigged.glb`.
 - `tools/export_kai_runtime.ps1` runs the Blender export and then reimports the asset into Godot.
 - `tools/render_kai_texture_preview.py` renders a quick workbench preview to `tmp/renders/kai_texture_preview.png`.
 
-Current 3D texture workspace assets:
+Current Kai asset roles:
 
 - `kai_companion/assets/kai/modelToUsed.glb`
+  Source mesh used to build the texture workspace.
+- `kai_companion/assets/kai/kai_textured.glb`
+  Unrigged textured runtime fallback.
+- `kai_companion/assets/kai/kai_textured_rigged.glb`
+  Primary runtime avatar for Godot.
 - `kai_companion/assets/kai/kai_texture_workspace.blend`
 - `kai_companion/assets/kai/kai_texture_paint.png`
 - `kai_companion/assets/kai/reference/`
+
+Runtime selection notes:
+
+- The companion prefers `kai_textured_rigged.glb` by default when it exists.
+- Set `KAI_USE_RIGGED_AVATAR=0` or `false` only if you need to force the older unrigged path.
 
 Useful commands inside Kai:
 

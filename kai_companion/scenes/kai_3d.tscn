@@ -4,7 +4,7 @@
 
 [node name="Kai3D" type="Node"]
 script = ExtResource("1_script")
-use_hologram_material = true
+use_hologram_material = false
 
 [node name="World" type="Node3D" parent="."]
 

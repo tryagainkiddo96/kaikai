@@ -238,7 +238,9 @@ func _play_animation_prefer(candidates: Array[String]) -> void:
 
 func _use_rigged_avatar() -> bool:
     var value := OS.get_environment(KAI_RIGGED_AVATAR_ENV).strip_edges().to_lower()
-    return value == "1" or value == "true" or value == "yes" or value == "on"
+    if value.is_empty():
+        return true
+    return not (value == "0" or value == "false" or value == "no" or value == "off")
 
 
 func _get_model_paths() -> Array[String]:
