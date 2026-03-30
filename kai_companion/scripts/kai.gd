@@ -6,9 +6,10 @@ const KAI_BARK_1_PATH := "res://assets/kai/audio/kai_bark_1.wav"
 const KAI_BARK_2_PATH := "res://assets/kai/audio/kai_bark_2.wav"
 const KAI_HOLOGRAM_SHADER_PATH := "res://assets/kai/kai_hologram.gdshader"
 const KAI_HOLOGRAM_CANVAS_SHADER_PATH := "res://assets/kai/kai_hologram_canvas.gdshader"
-const KAI_3D_MODEL_PATHS := [
-    "res://assets/kai/kai-lite.glb",
-]
+const KAI_RIGGED_AVATAR_ENV := "KAI_USE_RIGGED_AVATAR"
+const KAI_RIGGED_MODEL_PATH := "res://assets/kai/kai_textured_rigged.glb"
+const KAI_TEXTURED_MODEL_PATH := "res://assets/kai/kai_textured.glb"
+const KAI_FALLBACK_MODEL_PATH := "res://assets/kai/kai-lite.glb"
 const KAI_IDLE_IMAGE_PATH := "res://assets/kai/kai_photo_clean.png"
 const KAI_ALERT_IMAGE_PATH := "res://assets/kai/kai_alert_pose.png"
 const KAI_BARK_IMAGE_PATH := "res://assets/kai/kai_bark_pose.png"
@@ -123,6 +124,8 @@ const OFFLINE_REPLY_LINES := [
 
 func _ready() -> void:
     custom_minimum_size = WINDOW_SIZE
+    if _use_rigged_avatar():
+        prefer_3d_avatar = true
     _configure_desktop_window()
     if prefer_3d_avatar:
         _setup_3d_avatar()
@@ -323,7 +326,7 @@ func _setup_3d_avatar() -> void:
 func _load_3d_model() -> void:
     if use_hologram_avatar and _hologram_shader == null:
         _hologram_shader = load(KAI_HOLOGRAM_SHADER_PATH) as Shader
-    for path in KAI_3D_MODEL_PATHS:
+    for path in _get_model_paths():
         var packed := load(path)
         if packed is PackedScene:
             var instance := (packed as PackedScene).instantiate()
@@ -345,6 +348,24 @@ func _load_3d_model() -> void:
     _uses_3d_avatar = false
     if _model_texture_rect != null:
         _model_texture_rect.visible = false
+
+
+func _use_rigged_avatar() -> bool:
+    var value := OS.get_environment(KAI_RIGGED_AVATAR_ENV).strip_edges().to_lower()
+    return value == "1" or value == "true" or value == "yes" or value == "on"
+
+
+func _get_model_paths() -> Array[String]:
+    if _use_rigged_avatar():
+        return [
+            KAI_RIGGED_MODEL_PATH,
+            KAI_TEXTURED_MODEL_PATH,
+            KAI_FALLBACK_MODEL_PATH,
+        ]
+    return [
+        KAI_TEXTURED_MODEL_PATH,
+        KAI_FALLBACK_MODEL_PATH,
+    ]
 
 
 func _apply_hologram_materials(root: Node) -> void:

@@ -2,7 +2,10 @@ extends Node
 
 const WS_URL := "ws://127.0.0.1:8765"
 const OLLAMA_URL := "http://127.0.0.1:11434/api/chat"
-const KAI_3D_MODEL_PATH := "res://assets/kai/kai-lite.glb"
+const KAI_RIGGED_AVATAR_ENV := "KAI_USE_RIGGED_AVATAR"
+const KAI_RIGGED_MODEL_PATH := "res://assets/kai/kai_textured_rigged.glb"
+const KAI_TEXTURED_MODEL_PATH := "res://assets/kai/kai_textured.glb"
+const KAI_FALLBACK_MODEL_PATH := "res://assets/kai/kai-lite.glb"
 const KAI_HOLOGRAM_SHADER_PATH := "res://assets/kai/kai_hologram.gdshader"
 const WINDOW_SIZE := Vector2(340, 420)
 const TARGET_FPS := 30
@@ -174,25 +177,26 @@ func _configure_desktop_window() -> void:
 
 
 func _load_3d_model() -> void:
-    var packed := load(KAI_3D_MODEL_PATH)
-    if packed is not PackedScene:
-        _set_bubble_text("Kai 3D model failed to load.")
+    for path in _get_model_paths():
+        var packed := load(path)
+        if packed is not PackedScene:
+            continue
+        var instance := (packed as PackedScene).instantiate()
+        if instance is not Node3D:
+            continue
+        _model_root = instance as Node3D
+        _model_root.name = "KaiModel"
+        model_anchor.add_child(_model_root)
+        _model_root.position = Vector3(0.0, -1.0, 0.0)
+        _model_root.scale = Vector3.ONE * 1.72
+        if use_hologram_material:
+            _apply_hologram_materials(_model_root)
+        _model_animation_player = _find_first_animation_player(_model_root)
+        if _model_animation_player != null:
+            _known_animations = _model_animation_player.get_animation_list()
+        _play_animation_prefer(["idle", "Idle", "RESET", "ArmatureAction"])
         return
-    var instance := (packed as PackedScene).instantiate()
-    if instance is not Node3D:
-        _set_bubble_text("Kai 3D scene is invalid.")
-        return
-    _model_root = instance as Node3D
-    _model_root.name = "KaiModel"
-    model_anchor.add_child(_model_root)
-    _model_root.position = Vector3(0.0, -1.0, 0.0)
-    _model_root.scale = Vector3.ONE * 1.72
-    if use_hologram_material:
-        _apply_hologram_materials(_model_root)
-    _model_animation_player = _find_first_animation_player(_model_root)
-    if _model_animation_player != null:
-        _known_animations = _model_animation_player.get_animation_list()
-    _play_animation_prefer(["idle", "Idle", "RESET", "ArmatureAction"])
+    _set_bubble_text("Kai 3D model failed to load.")
 
 
 func _find_first_animation_player(root: Node) -> AnimationPlayer:
@@ -230,6 +234,24 @@ func _play_animation_prefer(candidates: Array[String]) -> void:
             _model_animation_player.play(name)
             return
     _model_animation_player.play(_known_animations[0])
+
+
+func _use_rigged_avatar() -> bool:
+    var value := OS.get_environment(KAI_RIGGED_AVATAR_ENV).strip_edges().to_lower()
+    return value == "1" or value == "true" or value == "yes" or value == "on"
+
+
+func _get_model_paths() -> Array[String]:
+    if _use_rigged_avatar():
+        return [
+            KAI_RIGGED_MODEL_PATH,
+            KAI_TEXTURED_MODEL_PATH,
+            KAI_FALLBACK_MODEL_PATH,
+        ]
+    return [
+        KAI_TEXTURED_MODEL_PATH,
+        KAI_FALLBACK_MODEL_PATH,
+    ]
 
 
 func _seed_history() -> void:
