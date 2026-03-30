@@ -16,6 +16,7 @@ from kai_agent.mood_journal import MoodJournal
 from kai_agent.relationship_model import RelationshipModel
 from kai_agent.semantic_memory import SemanticMemory
 from kai_agent.kai_identity import KAI_IDENTITY, KAI_FAMILY
+from kai_agent.smart_router import SmartRouter
 from kai_agent.social_timing import SocialTiming
 from kai_agent.kai_signals import KaiSignals
 from kai_agent.kai_stt import KaiSTT
@@ -133,6 +134,7 @@ class KaiAssistant:
         self.inner_voice = InnerMonologue(save_path=workspace / "memory" / "inner_monologue.json")
         self.relationship = RelationshipModel(save_path=workspace / "memory" / "relationship.json")
         self.mood_journal = MoodJournal(save_path=workspace / "memory" / "mood_journal.json")
+        self.router = SmartRouter(cache_path=workspace / "memory" / "answer_cache.json")
         self.pending_messages: list[dict] = []  # Proactive messages for widget
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.last_tool_context = ""
@@ -224,6 +226,25 @@ class KaiAssistant:
             self.tts.set_mood(self.emotions.derive_mood()[0])
             self.tts.speak(deterministic_reply)
             return deterministic_reply
+
+        # Smart router — skip Ollama for simple/direct answers
+        if not tool_context:
+            route = self.router.route(user_input)
+            if route["handler"] == "direct":
+                direct_response = route["data"].get("response", "")
+                if direct_response:
+                    self.history.append({"role": "user", "content": user_input})
+                    self.history.append({"role": "assistant", "content": direct_response})
+                    self.memory.append_session("assistant", direct_response)
+                    self.tts.speak(direct_response)
+                    return direct_response
+            elif route["handler"] == "cached":
+                cached_response = route["data"].get("response", "")
+                if cached_response:
+                    self.history.append({"role": "user", "content": user_input})
+                    self.history.append({"role": "assistant", "content": cached_response})
+                    self.memory.append_session("assistant", cached_response)
+                    return cached_response
 
         direct_action_hint = ""
         if not tool_context and self._looks_like_direct_action(user_input):
