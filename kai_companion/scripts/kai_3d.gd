@@ -138,7 +138,7 @@ var _wag_sound: AudioStream
 var _huff_sound: AudioStream
 var _paw_sound: AudioStream
 var _sigh_sound: AudioStream
-var _bark_cooldown := 0.0
+var _proactive_timer := 0.0
 
 const AMBIENT_LINES := [
     "Watching the room like it is my yard.",
@@ -249,6 +249,7 @@ func _ready() -> void:
     _rest_duration = randf_range(4.5, 7.5)
     _walk_target = Vector2(DisplayServer.window_get_position())
     _update_mood_display("Calm")
+    _proactive_timer = randf_range(300.0, 600.0)
 
 
 func _load_config() -> void:
@@ -280,9 +281,17 @@ func _process(delta: float) -> void:
     _update_bubble(delta)
     _update_model_pose()
     _update_cursor_reactions()
-    if _ambient_update_elapsed >= AMBIENT_UPDATE_INTERVAL:
-        _ambient_update_elapsed = 0.0
-        _update_ambient_behavior(AMBIENT_UPDATE_INTERVAL)
+    _proactive_timer -= delta
+    if _proactive_timer <= 0.0:
+        _proactive_timer = randf_range(300.0, 600.0)
+        var proactive_lines := [
+            "You’ve been at this a while.",
+            "Something changed.",
+            "Want me to check that?",
+            "I’m here.",
+            "Quick sniff check."
+        ]
+        _set_bubble_text(proactive_lines[randi() % proactive_lines.size()], 4.0)
 
 
 func _state_hold_duration(state_name: String) -> float:
