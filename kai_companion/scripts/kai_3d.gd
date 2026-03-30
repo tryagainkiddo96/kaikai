@@ -138,6 +138,8 @@ var _wag_sound: AudioStream
 var _huff_sound: AudioStream
 var _paw_sound: AudioStream
 var _sigh_sound: AudioStream
+var _bark_cooldown := 0.0
+var _current_mode := "companion"
 var _proactive_timer := 0.0
 
 const AMBIENT_LINES := [
@@ -341,7 +343,7 @@ func _input(event: InputEvent) -> void:
             elif not mouse_event.pressed:
                 _dragging = false
         elif mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-            _toggle_chat_overlay()
+            _show_mode_wheel()
     elif event is InputEventMouseMotion and _dragging:
         var motion_event := event as InputEventMouseMotion
         var next_position := motion_event.global_position - _drag_offset
@@ -366,7 +368,74 @@ func _ui_control_wants_mouse() -> bool:
     return false
 
 
-func _set_chat_overlay_visible(visible: bool) -> void:
+func _show_mode_wheel() -> void:
+    var popup = PopupPanel.new()
+    popup.size = Vector2(300, 300)
+    popup.position = Vector2(
+        DisplayServer.window_get_position().x + DisplayServer.window_get_size().x / 2 - 150,
+        DisplayServer.window_get_position().y + DisplayServer.window_get_size().y / 2 - 150
+    )
+    add_child(popup)
+    
+    var center_button = Button.new()
+    center_button.text = "Stay"
+    center_button.size = Vector2(60, 60)
+    center_button.position = Vector2(120, 120)
+    center_button.pressed.connect(func(): popup.hide(); popup.queue_free())
+    popup.add_child(center_button)
+    
+    var mode_names = ["Pentest Spy", "Home Sentinel", "Study Buddy", "Focus Guardian", "Cozy Companion", "Builder Kai", "Scout Researcher", "Storytime Kai"]
+    var mode_keys = ["pentest", "sentinel", "study", "focus", "cozy", "builder", "scout", "storytime"]
+    
+    for i in range(8):
+        var button = Button.new()
+        button.text = mode_names[i]
+        button.size = Vector2(80, 40)
+        var angle = i * PI / 4
+        var radius = 100
+        button.position = Vector2(150 + radius * cos(angle) - 40, 150 + radius * sin(angle) - 20)
+        var mode_key = mode_keys[i]
+        button.pressed.connect(func(): _set_mode(mode_key); popup.hide(); popup.queue_free())
+        popup.add_child(button)
+    
+    popup.popup()
+
+
+func _set_mode(mode: String) -> void:
+    _current_mode = mode
+    _apply_mode()
+
+
+func _apply_mode() -> void:
+    match _current_mode:
+        "pentest":
+            _update_mood_display("Alert")
+            _set_bubble_text("Spy mode activated.", 3.0)
+            OS.execute("cmd", ["/c", "start", "wt", "-p", "Command Prompt"])  # Open terminal, assuming Windows Terminal or cmd
+        "sentinel":
+            _update_mood_display("Alert")
+            _set_bubble_text("Home sentinel mode.", 3.0)
+        "study":
+            _update_mood_display("Thinking")
+            _set_bubble_text("Study buddy mode.", 3.0)
+        "focus":
+            _update_mood_display("Thinking")
+            _set_bubble_text("Focus guardian mode.", 3.0)
+        "cozy":
+            _update_mood_display("Happy")
+            _set_bubble_text("Cozy companion mode.", 3.0)
+        "builder":
+            _update_mood_display("Curious")
+            _set_bubble_text("Builder Kai mode.", 3.0)
+        "scout":
+            _update_mood_display("Curious")
+            _set_bubble_text("Scout researcher mode.", 3.0)
+        "storytime":
+            _update_mood_display("Happy")
+            _set_bubble_text("Storytime Kai mode.", 3.0)
+        _:
+            _update_mood_display("Calm")
+            _set_bubble_text("Companion mode.", 3.0)
     chat_overlay.visible = visible
     chat_toggle.text = "Chat"
     pet_button.text = "Pet"
