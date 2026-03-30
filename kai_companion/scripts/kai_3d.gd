@@ -248,7 +248,7 @@ func _ready() -> void:
     _walk_pause = randf_range(3.0, 6.0)
     _rest_duration = randf_range(4.5, 7.5)
     _walk_target = Vector2(DisplayServer.window_get_position())
-    _update_mood_display("Attentive")
+    _update_mood_display("Calm")
 
 
 func _load_config() -> void:
@@ -359,11 +359,13 @@ func _ui_control_wants_mouse() -> bool:
 
 func _set_chat_overlay_visible(visible: bool) -> void:
     chat_overlay.visible = visible
-    chat_toggle.text = "✕ Close" if visible else "💬 Chat"
+    chat_toggle.text = "Chat"
+    pet_button.text = "Pet"
+    walk_button.text = "Walk"
     if visible:
         chat_input.grab_focus()
         _set_bubble_text("Ask Kai anything.")
-        _update_mood_display("Listening")
+        _update_mood_display("Thinking")
         return
     _dragging = false
     if chat_input.has_focus():
@@ -390,7 +392,7 @@ func _on_walk_pressed() -> void:
         _update_mood_display("Attentive")
     else:
         _begin_walk("patrol")
-        _update_mood_display("Patrolling")
+        _update_mood_display("Curious")
 
 
 func _on_voice_pressed() -> void:
