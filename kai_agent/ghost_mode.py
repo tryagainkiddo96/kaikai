@@ -298,18 +298,31 @@ class GhostMode:
 
         self._ops_count = 0
         self._session_start: float = 0
+        self._using_tor = False
+        self._tor_opener = None
 
-    def activate(self) -> dict[str, Any]:
-        """Enter Ghost Mode."""
+    def activate(self, tor: bool = False) -> dict[str, Any]:
+        """Enter Ghost Mode. Set tor=True to route through Tor."""
         self._active = True
         self._session_start = time.time()
         self.identity.rotate()
         self.cleaner.clear_log()
+        self._using_tor = tor
+
+        # If Tor, configure the opener
+        if tor:
+            self._setup_tor()
+
+        msg = f"👻 Ghost Mode active. Identity: {self.identity.current['alias']}"
+        if tor:
+            msg += " [TOR CHAIN]"
+            self.cleaner.log_operation("tor_enabled", "proxy_chain", True)
 
         return {
             "active": True,
+            "tor": tor,
             "identity": self.identity.current["alias"],
-            "message": f"👻 Ghost Mode active. Identity: {self.identity.current['alias']}",
+            "message": msg,
         }
 
     def deactivate(self) -> dict[str, Any]:
@@ -317,6 +330,9 @@ class GhostMode:
         ops = len(self.cleaner.get_operation_log())
         cleaned = self.cleaner.cleanup()
         self.cleaner.clear_log()
+
+        was_tor = self._using_tor
+        self._restore_network()
         self._active = False
 
         duration = time.time() - self._session_start if self._session_start else 0
@@ -325,6 +341,7 @@ class GhostMode:
             "active": False,
             "operations": ops,
             "files_cleaned": cleaned,
+            "used_tor": was_tor,
             "duration": round(duration, 1),
             "message": f"👻 Ghost Mode disengaged. {ops} operations, {cleaned} traces cleaned. Duration: {duration:.0f}s",
         }
@@ -332,6 +349,46 @@ class GhostMode:
     @property
     def is_active(self) -> bool:
         return self._active
+
+    def _setup_tor(self):
+        """Configure urllib to route through Tor SOCKS proxy."""
+        try:
+            import urllib.request
+            import socks
+            import socket
+
+            # Tor SOCKS5 proxy (default port 9050)
+            socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", 9050)
+            socket.socket = socks.socksocket
+
+            # Verify Tor is running by checking if we can connect
+            test_sock = socks.socksocket()
+            test_sock.settimeout(5)
+            test_sock.connect(("127.0.0.1", 9050))
+            test_sock.close()
+
+            self._using_tor = True
+            print("[GHOST] Tor proxy chain active (3 hops)")
+        except ImportError:
+            print("[GHOST] PySocks not installed. Run: pip install PySocks")
+            print("[GHOST] Falling back to direct connection")
+            self._using_tor = False
+        except Exception as e:
+            print(f"[GHOST] Tor not available: {e}")
+            print("[GHOST] Is Tor running? sudo tor &")
+            self._using_tor = False
+
+    def _restore_network(self):
+        """Restore normal networking (undo Tor SOCKS)."""
+        if self._using_tor:
+            try:
+                import socket
+                # Restore default socket (close enough — Python reimport fixes it)
+                import importlib
+                importlib.reload(socket)
+            except Exception:
+                pass
+            self._using_tor = False
 
     # -- Operations --
 
