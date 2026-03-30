@@ -11,19 +11,19 @@ from tkinter import scrolledtext
 
 from kai_agent.assistant import KaiAssistant
 
-
-BG = "#0b0a14"
-PANEL = "#161126"
-PANEL_ALT = "#211738"
-LINE = "#4f3b73"
-TEXT = "#d9d2ff"
-TEXT_DIM = "#9e8fcb"
-TEXT_BRIGHT = "#fff4ff"
-ACCENT = "#ff78c8"
-WARN = "#7df9ff"
-USER_TEXT = "#ffb3df"
-KAI_TEXT = "#f6ecff"
-SYSTEM_TEXT = "#8ef7ff"
+# Shiba Inu warm palette
+BG = "#1A1612"
+PANEL = "#2A2218"
+PANEL_ALT = "#3A3028"
+LINE = "#6B5A3D"
+TEXT = "#F5E6D0"
+TEXT_DIM = "#8B7355"
+TEXT_BRIGHT = "#FFF5E1"
+ACCENT = "#E8733A"
+WARN = "#E8C547"
+USER_TEXT = "#E8733A"
+KAI_TEXT = "#FFF5E1"
+SYSTEM_TEXT = "#D4943A"
 WINDOW_REFRESH_MS = 4000
 
 
@@ -37,12 +37,14 @@ class KaiPanel:
         self.always_on_top = tk.BooleanVar(value=True)
         self.opacity = tk.DoubleVar(value=0.92)
         self.status_text = tk.StringVar(value="ONLINE")
-        self.kali_status = tk.StringVar(value="BOOTING")
+        self.kali_status = tk.StringVar(value="OFFLINE")
         self.window_link_status = tk.StringVar(value="UNLINKED")
         self.action_preview_text = tk.StringVar(value="No operator action yet.")
         self.proactive_hint_text = tk.StringVar(value="Kai hints will show up here when something useful comes to mind.")
+        self.recovery_text = tk.StringVar(value="Recovery mode will appear here when something fails.")
         self.task_queue_text = tk.StringVar(value=self.assistant.memory.summarize_tasks())
         self.command_safety_text = tk.StringVar(value="No command classified yet.")
+        self.playbooks_text = tk.StringVar(value="triage_garak_results | set_up_pyrit | summarize_art_findings")
         self.cached_window_context = ""
         self.kali_history: list[str] = []
         self.kali_history_index: int | None = None
@@ -52,11 +54,10 @@ class KaiPanel:
         self.capture_inflight = False
         self._build_window()
         self.root.after(120, self._poll_queue)
-        self.root.after(180, self._prime_kali_session)
         self.root.after(WINDOW_REFRESH_MS, self._auto_refresh_window_link)
 
     def _build_window(self) -> None:
-        self.root.title("Kai Nexus")
+        self.root.title("Kai")
         self.root.geometry("460x820+40+40")
         self.root.minsize(380, 640)
         self.root.configure(bg=BG)
@@ -73,10 +74,10 @@ class KaiPanel:
 
         title = tk.Label(
             titlebar,
-            text="KAI NEXUS",
-            fg=TEXT_BRIGHT,
+            text="🦊 KAI",
+            fg=ACCENT,
             bg=PANEL_ALT,
-            font=("Segoe UI Semibold", 18, "bold"),
+            font=("Segoe UI Semibold", 20, "bold"),
         )
         title.pack(anchor="w", padx=12, pady=(10, 0))
         title.bind("<ButtonPress-1>", self._start_drag)
@@ -84,10 +85,10 @@ class KaiPanel:
 
         subtitle = tk.Label(
             titlebar,
-            text="NEON OPS CHAT INTERFACE",
+            text="companion chat · local assistant",
             fg=TEXT_DIM,
             bg=PANEL_ALT,
-            font=("Segoe UI", 8, "bold"),
+            font=("Inter", 9),
         )
         subtitle.pack(anchor="w", padx=12, pady=(0, 10))
         subtitle.bind("<ButtonPress-1>", self._start_drag)
@@ -123,7 +124,7 @@ class KaiPanel:
             command=self._toggle_window_link,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -139,7 +140,7 @@ class KaiPanel:
             command=lambda: self._dock("left"),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 9, "bold"),
@@ -155,7 +156,7 @@ class KaiPanel:
             command=lambda: self._dock("right"),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 9, "bold"),
@@ -171,7 +172,7 @@ class KaiPanel:
             command=self._clear_messages,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -202,7 +203,7 @@ class KaiPanel:
             command=self._set_opacity,
             bg=PANEL,
             fg=TEXT_BRIGHT,
-            troughcolor="#0e0a19",
+            troughcolor="#141010",
             activebackground=ACCENT,
             highlightthickness=0,
             length=180,
@@ -212,7 +213,7 @@ class KaiPanel:
         self.messages = scrolledtext.ScrolledText(
             frame,
             wrap="word",
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -237,11 +238,25 @@ class KaiPanel:
         tk.Label(terminal_header, text="KALI FEED", fg=WARN, bg=PANEL_ALT, font=("Segoe UI", 8, "bold")).pack(side="left")
         tk.Button(
             terminal_header,
+            text="CONNECT KALI",
+            command=self._connect_kali_session,
+            fg=TEXT_BRIGHT,
+            bg=PANEL_ALT,
+            activebackground="#3A3028",
+            activeforeground=TEXT_BRIGHT,
+            relief="flat",
+            font=("Segoe UI", 8, "bold"),
+            padx=8,
+            pady=4,
+            highlightbackground=LINE,
+        ).pack(side="right", padx=(0, 8))
+        tk.Button(
+            terminal_header,
             text="CLEAR FEED",
             command=self._clear_kali_feed,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -254,7 +269,7 @@ class KaiPanel:
             terminal_frame,
             wrap="word",
             height=10,
-            bg="#0c0916",
+            bg="#141010",
             fg=SYSTEM_TEXT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -267,15 +282,24 @@ class KaiPanel:
         self.kali_feed.tag_configure("prompt", foreground=ACCENT)
         self.kali_feed.tag_configure("output", foreground=SYSTEM_TEXT)
         self.kali_feed.tag_configure("meta", foreground=TEXT_DIM)
-        self.kali_feed.insert("end", "# Kali session feed initializing...\n", "meta")
+        self.kali_feed.insert("end", "# Kali session is offline. Press CONNECT KALI to start.\n", "meta")
         self.kali_feed.configure(state="disabled")
+
+        tk.Label(
+            terminal_frame,
+            text="KALI COMMAND LINE (NOT CHAT)",
+            fg=TEXT_DIM,
+            bg=PANEL_ALT,
+            font=("Segoe UI", 8, "bold"),
+            anchor="w",
+        ).pack(fill="x", padx=12, pady=(0, 6))
 
         shell_bar = tk.Frame(terminal_frame, bg=PANEL_ALT)
         shell_bar.pack(fill="x", padx=12, pady=(0, 10))
 
         self.kali_input = tk.Entry(
             shell_bar,
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT_BRIGHT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -291,10 +315,10 @@ class KaiPanel:
             shell_bar,
             text="RUN",
             command=self._submit_kali_command,
-            fg="#12091a",
+            fg="#1A1612",
             bg=WARN,
-            activebackground="#a2fbff",
-            activeforeground="#12091a",
+            activebackground="#F0D878",
+            activeforeground="#1A1612",
             relief="flat",
             font=("Segoe UI", 9, "bold"),
             padx=10,
@@ -307,7 +331,7 @@ class KaiPanel:
             command=lambda: self._submit_kali_command("pwd"),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -322,7 +346,7 @@ class KaiPanel:
             command=self._reset_kali_session,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -397,6 +421,28 @@ class KaiPanel:
             font=("Segoe UI", 9),
         ).pack(fill="x", padx=12, pady=(0, 10))
 
+        recovery_frame = tk.Frame(frame, bg=PANEL_ALT, highlightbackground=LINE, highlightthickness=1)
+        recovery_frame.pack(fill="x", padx=12, pady=(0, 10))
+
+        tk.Label(
+            recovery_frame,
+            text="RECOVERY",
+            fg=ACCENT,
+            bg=PANEL_ALT,
+            font=("Segoe UI", 8, "bold"),
+        ).pack(anchor="w", padx=12, pady=(10, 4))
+
+        tk.Label(
+            recovery_frame,
+            textvariable=self.recovery_text,
+            fg=TEXT_BRIGHT,
+            bg=PANEL_ALT,
+            justify="left",
+            anchor="w",
+            wraplength=400,
+            font=("Segoe UI", 9),
+        ).pack(fill="x", padx=12, pady=(0, 10))
+
         task_frame = tk.Frame(frame, bg=PANEL_ALT, highlightbackground=LINE, highlightthickness=1)
         task_frame.pack(fill="x", padx=12, pady=(0, 10))
 
@@ -417,7 +463,7 @@ class KaiPanel:
             command=lambda: self._submit_prompt("show tasks"),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
@@ -442,7 +488,7 @@ class KaiPanel:
 
         self.task_input = tk.Entry(
             task_bar,
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT_BRIGHT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -455,10 +501,10 @@ class KaiPanel:
             task_bar,
             text="ADD TASK",
             command=self._submit_task_add,
-            fg="#12091a",
+            fg="#1A1612",
             bg=ACCENT,
-            activebackground="#ff9ddb",
-            activeforeground="#12091a",
+            activebackground="#E8733A",
+            activeforeground="#1A1612",
             relief="flat",
             font=("Segoe UI", 9, "bold"),
             padx=10,
@@ -471,11 +517,98 @@ class KaiPanel:
             command=self._complete_active_task,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 8, "bold"),
             padx=8,
+            pady=6,
+            highlightbackground=LINE,
+        ).pack(side="left")
+
+        playbooks_frame = tk.Frame(frame, bg=PANEL_ALT, highlightbackground=LINE, highlightthickness=1)
+        playbooks_frame.pack(fill="x", padx=12, pady=(0, 10))
+
+        playbooks_header = tk.Frame(playbooks_frame, bg=PANEL_ALT)
+        playbooks_header.pack(fill="x", padx=12, pady=(10, 4))
+
+        tk.Label(
+            playbooks_header,
+            text="PLAYBOOKS",
+            fg=WARN,
+            bg=PANEL_ALT,
+            font=("Segoe UI", 8, "bold"),
+        ).pack(side="left")
+
+        tk.Button(
+            playbooks_header,
+            text="SHOW",
+            command=lambda: self._submit_prompt("show playbooks"),
+            fg=TEXT_BRIGHT,
+            bg=PANEL_ALT,
+            activebackground="#3A3028",
+            activeforeground=TEXT_BRIGHT,
+            relief="flat",
+            font=("Segoe UI", 8, "bold"),
+            padx=8,
+            pady=4,
+            highlightbackground=LINE,
+        ).pack(side="right")
+
+        tk.Label(
+            playbooks_frame,
+            textvariable=self.playbooks_text,
+            fg=TEXT_BRIGHT,
+            bg=PANEL_ALT,
+            justify="left",
+            anchor="w",
+            wraplength=400,
+            font=("Cascadia Code", 8),
+        ).pack(fill="x", padx=12, pady=(0, 8))
+
+        playbooks_bar = tk.Frame(playbooks_frame, bg=PANEL_ALT)
+        playbooks_bar.pack(fill="x", padx=12, pady=(0, 10))
+
+        tk.Button(
+            playbooks_bar,
+            text="GARAK",
+            command=lambda: self._seed_prompt("triage garak results: "),
+            fg="#1A1612",
+            bg=WARN,
+            activebackground="#F0D878",
+            activeforeground="#1A1612",
+            relief="flat",
+            font=("Segoe UI", 8, "bold"),
+            padx=10,
+            pady=6,
+        ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            playbooks_bar,
+            text="PYRIT",
+            command=lambda: self._seed_prompt("setup pyrit: "),
+            fg=TEXT_BRIGHT,
+            bg=PANEL_ALT,
+            activebackground="#3A3028",
+            activeforeground=TEXT_BRIGHT,
+            relief="flat",
+            font=("Segoe UI", 8, "bold"),
+            padx=10,
+            pady=6,
+            highlightbackground=LINE,
+        ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            playbooks_bar,
+            text="ART",
+            command=lambda: self._seed_prompt("summarize art findings: "),
+            fg=TEXT_BRIGHT,
+            bg=PANEL_ALT,
+            activebackground="#3A3028",
+            activeforeground=TEXT_BRIGHT,
+            relief="flat",
+            font=("Segoe UI", 8, "bold"),
+            padx=10,
             pady=6,
             highlightbackground=LINE,
         ).pack(side="left")
@@ -489,7 +622,7 @@ class KaiPanel:
             command=self._open_kali_terminal,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -505,7 +638,7 @@ class KaiPanel:
             command=self._open_kali_here,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -521,7 +654,7 @@ class KaiPanel:
             command=self._open_workspace,
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -530,6 +663,22 @@ class KaiPanel:
             highlightbackground=LINE,
         )
         open_workspace.pack(side="left", padx=(10, 0))
+
+        open_logs = tk.Button(
+            utility_row,
+            text="OPEN LOGS",
+            command=self._open_logs,
+            fg=TEXT_BRIGHT,
+            bg=PANEL_ALT,
+            activebackground="#3A3028",
+            activeforeground=TEXT_BRIGHT,
+            relief="flat",
+            font=("Segoe UI", 10, "bold"),
+            padx=12,
+            pady=8,
+            highlightbackground=LINE,
+        )
+        open_logs.pack(side="left", padx=(10, 0))
 
         utility_row_2 = tk.Frame(frame, bg=PANEL)
         utility_row_2.pack(fill="x", padx=12, pady=(0, 10))
@@ -540,7 +689,7 @@ class KaiPanel:
             command=lambda: self._submit_prompt("run this project in ."),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -556,7 +705,7 @@ class KaiPanel:
             command=lambda: self._submit_prompt("run tests in ."),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -572,7 +721,7 @@ class KaiPanel:
             command=lambda: self._seed_prompt("kali: "),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -588,7 +737,7 @@ class KaiPanel:
             command=lambda: self._seed_prompt("kali run: "),
             fg=TEXT_BRIGHT,
             bg=PANEL_ALT,
-            activebackground="#322254",
+            activebackground="#3A3028",
             activeforeground=TEXT_BRIGHT,
             relief="flat",
             font=("Segoe UI", 10, "bold"),
@@ -599,11 +748,11 @@ class KaiPanel:
         kali_shell.pack(side="left", padx=(10, 0))
 
         compose = tk.Frame(frame, bg=PANEL_ALT, highlightbackground=LINE, highlightthickness=1)
-        compose.pack(fill="x", padx=12, pady=(0, 12))
+        compose.pack(fill="x", padx=12, pady=(0, 12), before=terminal_frame)
 
         label = tk.Label(
             compose,
-            text="CHAT LINK",
+            text="CHAT TO KAI",
             fg=TEXT_DIM,
             bg=PANEL_ALT,
             font=("Segoe UI", 9, "bold"),
@@ -614,7 +763,7 @@ class KaiPanel:
             compose,
             height=4,
             wrap="word",
-            bg="#100d1d",
+            bg="#1E1A15",
             fg=TEXT_BRIGHT,
             insertbackground=TEXT_BRIGHT,
             relief="flat",
@@ -631,10 +780,10 @@ class KaiPanel:
             compose,
             text="SEND",
             command=self._submit_prompt,
-            fg="#12091a",
+            fg="#1A1612",
             bg=ACCENT,
-            activebackground="#ff9ddb",
-            activeforeground="#12091a",
+            activebackground="#E8733A",
+            activeforeground="#1A1612",
             relief="flat",
             font=("Segoe UI", 11, "bold"),
             padx=12,
@@ -713,9 +862,25 @@ class KaiPanel:
             self._append_message("WARN>", f"Could not open workspace: {exc}", "system")
             self.action_preview_text.set(f"Action: open_workspace\nStatus: needs attention\nError: {exc}")
 
+    def _open_logs(self) -> None:
+        try:
+            logs_path = self.assistant.workspace / "logs"
+            logs_path.mkdir(parents=True, exist_ok=True)
+            subprocess.Popen(["explorer.exe", str(logs_path)])
+            self._append_message("KAI>", "Opened logs folder.", "system")
+            self.action_preview_text.set(f"Action: open_logs\nStatus: ok\nPath: {logs_path}")
+        except Exception as exc:
+            self._append_message("WARN>", f"Could not open logs: {exc}", "system")
+            self.action_preview_text.set(f"Action: open_logs\nStatus: needs attention\nError: {exc}")
+
     def _prime_kali_session(self) -> None:
         worker = threading.Thread(target=self._run_kali_session_start, daemon=True)
         worker.start()
+
+    def _connect_kali_session(self) -> None:
+        self.status_text.set("KALI")
+        self._append_kali_feed("# connecting Kali session...", "meta")
+        self._prime_kali_session()
 
     def _refresh_kali_status(self) -> None:
         worker = threading.Thread(target=self._run_kali_session_status, daemon=True)
@@ -930,6 +1095,8 @@ class KaiPanel:
 
     def _run_kali_command(self, command: str) -> None:
         try:
+            # Lazy-start Kali only when the user explicitly uses Kali controls.
+            self.assistant.tools.start_kali_session()
             payload = self.assistant.tools.run_kali_session_command(command)
             self.result_queue.put(("kali_command", payload))
         except Exception as exc:
@@ -997,6 +1164,8 @@ class KaiPanel:
                         self.action_preview_text.set(self.assistant.last_action_preview)
                     if self.assistant.last_proactive_hint:
                         self.proactive_hint_text.set(self.assistant.last_proactive_hint)
+                    if self.assistant.last_recovery_plan:
+                        self.recovery_text.set(self.assistant.last_recovery_plan)
                     self._refresh_task_queue()
                     self._append_message("KAI>", payload, "kai")
                     self._sync_kali_feed_from_tool_context()
@@ -1029,9 +1198,16 @@ class KaiPanel:
                         self.kali_status.set("READY")
                         if str(data.get("command", "")).strip().lower() == "pwd":
                             self.proactive_hint_text.set("Suggestion: try `ls`, `cd <folder>`, or press Tab for completions.")
+                        self.recovery_text.set("Recovery idle: last Kali command completed successfully.")
                     else:
                         self.kali_status.set("ERROR")
                         self.proactive_hint_text.set("Suggestion: that Kali command failed. I can help research the error from chat or you can edit and retry here.")
+                        self.recovery_text.set(
+                            "Failure Point: command execution\n"
+                            "Likely Cause: the command did not complete cleanly\n"
+                            "Smallest Fix: review the stderr and retry the smallest safe next step\n"
+                            f"Next Command: {data.get('command', '')}"
+                        )
                     self._append_kali_feed(f"$ {data.get('command', '')}", "prompt")
                     if data.get("stdout"):
                         self._append_kali_feed(data["stdout"], "output")
@@ -1050,6 +1226,7 @@ class KaiPanel:
                     self.kali_status.set("READY" if start_data.get("ok") else "ERROR")
                     self._append_kali_feed("# session reset", "meta")
                     self.proactive_hint_text.set("Suggestion: the Kali session was reset cleanly. `pwd` is a good quick check.")
+                    self.recovery_text.set("Recovery idle: Kali session reset cleanly.")
                     if start_data.get("cwd"):
                         self._append_kali_feed(f"# session ready @ {start_data.get('cwd', '')}", "meta")
                     self.action_preview_text.set(
@@ -1061,6 +1238,11 @@ class KaiPanel:
                     self.kali_status.set("ERROR")
                     self._append_kali_feed(f"# session error: {payload}", "meta")
                     self.proactive_hint_text.set("Suggestion: the Kali bridge hit an error. `RESET` should usually recover it.")
+                    self.recovery_text.set(
+                        "Failure Point: Kali bridge\n"
+                        "Likely Cause: the session bridge threw an error\n"
+                        "Smallest Fix: press RESET to restart the session and retry with a smaller validation command"
+                    )
                 elif kind == "capture":
                     self.cached_window_context = payload
                     self.window_link_status.set("READY")

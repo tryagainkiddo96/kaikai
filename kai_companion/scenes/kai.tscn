@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/kai.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/kai/kai_photo_clean.png" id="2_idle"]
 [ext_resource type="Texture2D" path="res://assets/kai/kai_alert_pose.png" id="3_alert"]
 [ext_resource type="Texture2D" path="res://assets/kai/kai_bark_pose.png" id="4_bark"]
 [ext_resource type="Texture2D" path="res://assets/kai/kai_lie_down_clean.png" id="5_rest"]
+[ext_resource type="Theme" path="res://assets/kai/kai_theme.tres" id="6_theme"]
 
 [node name="Kai" type="Control"]
 layout_mode = 3
@@ -14,6 +15,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
+theme = ExtResource("6_theme")
 script = ExtResource("1_script")
 
 [node name="AvatarShadow" type="TextureRect" parent="."]
@@ -38,53 +40,106 @@ expand_mode = 1
 stretch_mode = 5
 mouse_filter = 2
 
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = -12.0
+offset_bottom = 28.0
+grow_horizontal = 2
+
+[node name="StatusLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.545, 0.451, 0.333, 1.0)
+theme_override_font_sizes/font_size = 11
+text = "Kai"
+
+[node name="MoodLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.769, 0.451, 0.227, 1.0)
+theme_override_font_sizes/font_size = 11
+text = "Attentive"
+
 [node name="Bubble" type="PanelContainer" parent="."]
 offset_left = 12.0
-offset_top = 12.0
-offset_right = 252.0
-offset_bottom = 92.0
+offset_top = 34.0
+offset_right = 280.0
+offset_bottom = 90.0
 mouse_filter = 2
 
 [node name="BubbleLabel" type="Label" parent="Bubble"]
-custom_minimum_size = Vector2(210, 0)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.961, 0.902, 0.816, 1.0)
 theme_override_font_sizes/font_size = 16
 text = "Kai booting up..."
 autowrap_mode = 3
 
-[node name="ChatPanel" type="PanelContainer" parent="."]
+[node name="ChatOverlay" type="PanelContainer" parent="."]
 visible = false
-offset_left = 12.0
-offset_top = 270.0
-offset_right = 328.0
-offset_bottom = 408.0
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -320.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
 
-[node name="Margin" type="MarginContainer" parent="ChatPanel"]
+[node name="ChatVBox" type="VBoxContainer" parent="ChatOverlay"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/separation = 8
 
-[node name="VBox" type="VBoxContainer" parent="ChatPanel/Margin"]
+[node name="ChatLog" type="RichTextLabel" parent="ChatOverlay/ChatVBox"]
 layout_mode = 2
-
-[node name="ChatLog" type="RichTextLabel" parent="ChatPanel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 100)
-layout_mode = 2
+size_flags_vertical = 3
 bbcode_enabled = true
+theme_override_colors/default_color = Color(0.961, 0.902, 0.816, 1.0)
 
-[node name="InputRow" type="HBoxContainer" parent="ChatPanel/Margin/VBox"]
+[node name="InputRow" type="HBoxContainer" parent="ChatOverlay/ChatVBox"]
 layout_mode = 2
 
-[node name="ChatInput" type="LineEdit" parent="ChatPanel/Margin/VBox/InputRow"]
+[node name="ChatInput" type="LineEdit" parent="ChatOverlay/ChatVBox/InputRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "Chat with Kai..."
+placeholder_text = "Talk to Kai..."
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+theme_override_colors/font_placeholder_color = Color(0.545, 0.451, 0.333, 0.6)
 
-[node name="SendButton" type="Button" parent="ChatPanel/Margin/VBox/InputRow"]
+[node name="SendButton" type="Button" parent="ChatOverlay/ChatVBox/InputRow"]
 layout_mode = 2
 text = "Send"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+
+[node name="ActionBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -340.0
+offset_right = -8.0
+offset_bottom = -316.0
+grow_horizontal = 2
+
+[node name="ChatToggle" type="Button" parent="ActionBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "💬 Chat"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+
+[node name="PetButton" type="Button" parent="ActionBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "✋ Pet"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
 
 [node name="HTTPRequest" type="HTTPRequest" parent="."]
 

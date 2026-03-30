@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Kai — Black & Tan Shiba Inu with white markings -->
+  <!-- Outer ears (black) -->
+  <path d="M20 16 L38 50 L12 54 Z" fill="#1A1612"/>
+  <path d="M100 16 L82 50 L108 54 Z" fill="#1A1612"/>
+  <!-- Inner ears (tan/rust) -->
+  <path d="M23 22 L36 47 L18 50 Z" fill="#C4783A"/>
+  <path d="M97 22 L84 47 L102 50 Z" fill="#C4783A"/>
+  <!-- Head (black top fading to tan) -->
+  <ellipse cx="60" cy="60" rx="38" ry="36" fill="#1A1612"/>
+  <!-- Tan cheeks -->
+  <ellipse cx="38" cy="64" rx="16" ry="18" fill="#C4783A"/>
+  <ellipse cx="82" cy="64" rx="16" ry="18" fill="#C4783A"/>
+  <!-- White/cream face markings (muzzle, chest area) -->
+  <ellipse cx="60" cy="70" rx="22" ry="24" fill="#F5E6D0"/>
+  <!-- Forehead tan eyebrows -->
+  <path d="M38 42 Q44 36 50 42 Q46 48 38 42Z" fill="#C4783A"/>
+  <path d="M82 42 Q76 36 70 42 Q74 48 82 42Z" fill="#C4783A"/>
+  <!-- White forehead blaze -->
+  <path d="M46 36 Q60 30 74 36 Q70 48 60 46 Q50 48 46 36Z" fill="#F5E6D0"/>
+  <!-- Eyes (dark, almond-shaped) -->
+  <path d="M40 56 Q46 52 52 56 Q46 59 40 56Z" fill="#1A1612"/>
+  <path d="M68 56 Q74 52 80 56 Q74 59 68 56Z" fill="#1A1612"/>
+  <!-- Eye shine -->
+  <circle cx="48" cy="54.5" r="1.5" fill="#FFF5E1"/>
+  <circle cx="76" cy="54.5" r="1.5" fill="#FFF5E1"/>
+  <!-- Nose (black) -->
+  <ellipse cx="60" cy="68" rx="5.5" ry="4" fill="#1A1612"/>
+  <!-- Nose shine -->
+  <ellipse cx="61.5" cy="66.5" r="1.5" fill="#2A2218"/>
+  <!-- Mouth -->
+  <path d="M54 72 Q60 78 66 72" stroke="#1A1612" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M60 68 L60 72" stroke="#1A1612" stroke-width="1.2" fill="none"/>
+  <!-- Tan cheek tufts (side fur) -->
+  <path d="M26 54 Q30 62 24 70" stroke="#C4783A" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M94 54 Q90 62 96 70" stroke="#C4783A" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>

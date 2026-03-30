@@ -2,22 +2,76 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kai Pip-Boy Widget</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#C4783A" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Kai" />
+    <meta name="description" content="Your Shiba Inu companion, now in your pocket." />
+    <link rel="manifest" href="./manifest.json" />
+    <title>Kai — Your Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .loading-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        background: #1A1612;
+        transition: opacity 0.6s ease, visibility 0.6s ease;
+      }
+      .loading-splash.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+      .loading-splash .logo-spin {
+        width: 64px;
+        height: 64px;
+        animation: breathe 2s ease-in-out infinite;
+        filter: drop-shadow(0 0 20px rgba(196, 120, 58, 0.4));
+      }
+      .loading-splash .load-text {
+        margin-top: 16px;
+        color: #8B7355;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+      }
+      @keyframes breathe {
+        0%, 100% { transform: scale(1); opacity: 0.7; }
+        50% { transform: scale(1.05); opacity: 1; }
+      }
+    </style>
   </head>
   <body>
+    <div class="loading-splash" id="loadingSplash">
+      <div style="text-align:center">
+        <img src="./kai-logo.svg" alt="" class="logo-spin" />
+        <p class="load-text">Waking Kai...</p>
+      </div>
+    </div>
     <main class="shell">
       <section class="frame">
         <header class="topbar">
-          <div>
-            <p class="eyebrow">Vault-Tec Personal Assistant Interface</p>
-            <h1>Kai Communicator</h1>
+          <div class="logo-group">
+            <img src="./kai-logo.svg" alt="Kai" class="logo" />
+            <div>
+              <p class="eyebrow">Personal AI Companion</p>
+              <h1>Kai</h1>
+            </div>
           </div>
-          <div class="lights" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
+          <div class="status-lights" aria-hidden="true">
+            <span class="light active"></span>
+            <span class="light warm"></span>
+            <span class="light cool"></span>
           </div>
         </header>
 
@@ -28,38 +82,64 @@
           </div>
           <div class="status-card">
             <span class="status-label">Mode</span>
-            <strong>Field Ops Chat</strong>
+            <strong>Companion Chat</strong>
           </div>
           <div class="status-card">
-            <span class="status-label">Tone</span>
-            <strong>Warm / Practical</strong>
+            <span class="status-label">Mood</span>
+            <strong id="moodLabel">🦊 neutral</strong>
+          </div>
+          <div class="status-card" id="companionStatus" style="display:none">
+            <span class="status-label">Status</span>
+            <strong id="statusLine">—</strong>
           </div>
         </section>
 
         <section id="messages" class="messages" aria-live="polite">
           <article class="message assistant">
-            <span class="tag">KAI</span>
-            <p>Signal acquired. Ask for commands, troubleshooting, or a fast explanation.</p>
+            <span class="tag">
+              <svg class="paw-icon" viewBox="0 0 40 40"><use href="./paw.svg#paw"/></svg>
+              KAI
+            </span>
+            <p>I'm here. Ask me anything — commands, troubleshooting, or just talk.</p>
           </article>
         </section>
 
+        <div class="messages-toolbar">
+          <button id="clearChat" class="clear-btn" title="Clear conversation">🗑 Clear</button>
+        </div>
+
         <section class="quick-actions">
-          <button data-prompt="How do I check listening ports on Kali?">Ports</button>
-          <button data-prompt="Explain how to safely update Kali packages.">Update</button>
-          <button data-prompt="Read my screen and summarize what matters.">Screen</button>
-          <button data-prompt="What should I check when a service fails to start?">Services</button>
+          <button data-prompt="How do I check listening ports on Kali?">
+            <svg class="btn-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Ports
+          </button>
+          <button data-prompt="Explain how to safely update Kali packages.">
+            <svg class="btn-icon" viewBox="0 0 16 16"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M3 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Update
+          </button>
+          <button data-prompt="Read my screen and summarize what matters.">
+            <svg class="btn-icon" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 15h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Screen
+          </button>
+          <button data-prompt="What should I check when a service fails to start?">
+            <svg class="btn-icon" viewBox="0 0 16 16"><path d="M6 2L3 8h6L6 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/><circle cx="8" cy="11" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+            Services
+          </button>
         </section>
 
         <form id="chatForm" class="composer">
-          <label class="composer-label" for="promptInput">Transmit Query</label>
+          <label class="composer-label" for="promptInput">Talk to Kai</label>
           <div class="composer-row">
             <textarea
               id="promptInput"
               name="prompt"
               rows="3"
-              placeholder="Talk to Kai naturally..."
+              placeholder="What's on your mind?"
             ></textarea>
-            <button id="sendButton" type="submit">Send</button>
+            <button id="sendButton" type="submit">
+              Send
+              <svg class="send-icon" viewBox="0 0 16 16"><path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </button>
           </div>
         </form>
       </section>

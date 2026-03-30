@@ -6,10 +6,9 @@ const KAI_BARK_1_PATH := "res://assets/kai/audio/kai_bark_1.wav"
 const KAI_BARK_2_PATH := "res://assets/kai/audio/kai_bark_2.wav"
 const KAI_HOLOGRAM_SHADER_PATH := "res://assets/kai/kai_hologram.gdshader"
 const KAI_HOLOGRAM_CANVAS_SHADER_PATH := "res://assets/kai/kai_hologram_canvas.gdshader"
-const KAI_RIGGED_AVATAR_ENV := "KAI_USE_RIGGED_AVATAR"
-const KAI_RIGGED_MODEL_PATH := "res://assets/kai/kai_textured_rigged.glb"
-const KAI_TEXTURED_MODEL_PATH := "res://assets/kai/kai_textured.glb"
-const KAI_FALLBACK_MODEL_PATH := "res://assets/kai/kai-lite.glb"
+const KAI_3D_MODEL_PATHS := [
+    "res://assets/kai/kai_textured.glb",
+]
 const KAI_IDLE_IMAGE_PATH := "res://assets/kai/kai_photo_clean.png"
 const KAI_ALERT_IMAGE_PATH := "res://assets/kai/kai_alert_pose.png"
 const KAI_BARK_IMAGE_PATH := "res://assets/kai/kai_bark_pose.png"
@@ -34,13 +33,14 @@ const INTERACTION_COOLDOWN_MAX := 6.5
 const BARK_ENABLED := false
 
 @export var ollama_model: String = "qwen3:4b-q4_K_M"
-@export var use_hologram_avatar: bool = false
-@export var prefer_3d_avatar: bool = true
+@export var use_hologram_avatar: bool = true
+@export var prefer_3d_avatar: bool = false
 
 @onready var avatar: TextureRect = $Avatar
 @onready var avatar_shadow: TextureRect = $AvatarShadow
 @onready var bubble: PanelContainer = $Bubble
 @onready var bubble_label: Label = $Bubble/BubbleLabel
+@onready var panel_toggle_button: Button = $PanelToggleButton
 @onready var chat_panel: PanelContainer = $ChatPanel
 @onready var chat_log: RichTextLabel = $ChatPanel/Margin/VBox/ChatLog
 @onready var chat_input: LineEdit = $ChatPanel/Margin/VBox/InputRow/ChatInput
@@ -87,6 +87,7 @@ var _model_texture_rect: TextureRect
 var _model_world: Node3D
 var _model_root: Node3D
 var _model_animation_player: AnimationPlayer
+var _known_animations: PackedStringArray = []
 var _hologram_shader: Shader
 var _hologram_canvas_shader: Shader
 var _socket_poll_elapsed := 0.0
@@ -124,8 +125,6 @@ const OFFLINE_REPLY_LINES := [
 
 func _ready() -> void:
     custom_minimum_size = WINDOW_SIZE
-    if _use_rigged_avatar():
-        prefer_3d_avatar = true
     _configure_desktop_window()
     if prefer_3d_avatar:
         _setup_3d_avatar()
@@ -135,9 +134,10 @@ func _ready() -> void:
     _seed_history()
     _set_bubble_text("Kai is here.")
     _set_status("ready")
-    chat_panel.visible = false
+    _set_chat_panel_visible(false)
     _ambient_timer = randf_range(5.0, 9.0)
     request.request_completed.connect(_on_request_completed)
+    panel_toggle_button.pressed.connect(_toggle_chat_panel)
     send_button.pressed.connect(_send_chat_message)
     chat_input.text_submitted.connect(_on_input_submitted)
     _socket_retry_at = Time.get_unix_time_from_system() + randf_range(0.2, 0.8)
@@ -186,6 +186,11 @@ func _process(delta: float) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+    if event.is_action_pressed("ui_cancel"):
+        if chat_panel.visible:
+            _set_chat_panel_visible(false)
+            accept_event()
+        return
     if event is InputEventMouseButton:
         var mouse_event := event as InputEventMouseButton
         if mouse_event.button_index == MOUSE_BUTTON_LEFT:
@@ -200,18 +205,30 @@ func _gui_input(event: InputEvent) -> void:
             else:
                 _dragging = false
         elif mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-            chat_panel.visible = not chat_panel.visible
-            if chat_panel.visible:
-                chat_input.grab_focus()
-                _set_status("ready")
-                _set_bubble_text("Ask Kai anything.")
-            else:
-                _set_bubble_text("Right click to chat again.")
+            _toggle_chat_panel()
     elif event is InputEventMouseMotion and _dragging:
         var motion_event := event as InputEventMouseMotion
         var next_position := motion_event.global_position - _drag_offset
         DisplayServer.window_set_position(Vector2i(next_position))
         _anchor_position = next_position
+
+
+func _toggle_chat_panel() -> void:
+    _set_chat_panel_visible(not chat_panel.visible)
+
+
+func _set_chat_panel_visible(visible: bool) -> void:
+    chat_panel.visible = visible
+    panel_toggle_button.text = "Hide" if visible else "Chat"
+    if visible:
+        chat_input.grab_focus()
+        _set_status("ready")
+        _set_bubble_text("Ask Kai anything.")
+        return
+    _dragging = false
+    if chat_input.has_focus():
+        chat_input.release_focus()
+    _set_bubble_text("Tap Chat or right click to talk again.")
 
 
 func _configure_desktop_window() -> void:
@@ -326,7 +343,7 @@ func _setup_3d_avatar() -> void:
 func _load_3d_model() -> void:
     if use_hologram_avatar and _hologram_shader == null:
         _hologram_shader = load(KAI_HOLOGRAM_SHADER_PATH) as Shader
-    for path in _get_model_paths():
+    for path in KAI_3D_MODEL_PATHS:
         var packed := load(path)
         if packed is PackedScene:
             var instance := (packed as PackedScene).instantiate()
@@ -338,6 +355,8 @@ func _load_3d_model() -> void:
                 _model_root.scale = Vector3.ONE * 1.18
                 _apply_hologram_materials(_model_root)
                 _model_animation_player = _find_first_node_by_class(_model_root, "AnimationPlayer") as AnimationPlayer
+                if _model_animation_player != null:
+                    _known_animations = _model_animation_player.get_animation_list()
                 _uses_3d_avatar = true
                 avatar.visible = false
                 avatar_shadow.visible = false
@@ -348,26 +367,6 @@ func _load_3d_model() -> void:
     _uses_3d_avatar = false
     if _model_texture_rect != null:
         _model_texture_rect.visible = false
-
-
-func _use_rigged_avatar() -> bool:
-    var value := OS.get_environment(KAI_RIGGED_AVATAR_ENV).strip_edges().to_lower()
-    if value.is_empty():
-        return true
-    return not (value == "0" or value == "false" or value == "no" or value == "off")
-
-
-func _get_model_paths() -> Array[String]:
-    if _use_rigged_avatar():
-        return [
-            KAI_RIGGED_MODEL_PATH,
-            KAI_TEXTURED_MODEL_PATH,
-            KAI_FALLBACK_MODEL_PATH,
-        ]
-    return [
-        KAI_TEXTURED_MODEL_PATH,
-        KAI_FALLBACK_MODEL_PATH,
-    ]
 
 
 func _apply_hologram_materials(root: Node) -> void:
@@ -588,23 +587,50 @@ func _update_3d_avatar_pose() -> void:
             _model_root.position = Vector3(0.0, -0.63 + bob * 0.3, 0.0)
             _model_root.rotation.x = 0.03
             _model_root.scale = Vector3.ONE * (1.16 + sin(_time * 8.0) * 0.01)
-            if _model_animation_player != null:
-                if not _model_animation_player.is_playing() or _model_animation_player.current_animation != "trot":
-                    if _model_animation_player.has_animation("trot"):
-                        _model_animation_player.play("trot")
-                _model_animation_player.speed_scale = max(0.85, _walk_speed / WALK_SPEED_MAX)
+            _play_3d_animation(
+                ["trot", "walk", "run", "gallop", "locomotion", "move", "cycle"],
+                max(0.85, _walk_speed / WALK_SPEED_MAX)
+            )
         "alert", "thinking", "wag_tail":
             _model_root.position = Vector3(0.0, -0.67 + bob * 0.2, 0.0)
             _model_root.rotation.x = 0.0
             _model_root.scale = Vector3.ONE * 1.15
-            if _model_animation_player != null and _model_animation_player.is_playing() and _model_animation_player.current_animation == "trot":
-                _model_animation_player.stop()
+            _play_3d_animation(["idle", "stand", "rest", "RESET", "ArmatureAction"], 1.0)
         _:
             _model_root.position = Vector3(0.0, -0.66 + bob * 0.18, 0.0)
             _model_root.rotation.x = 0.0
             _model_root.scale = Vector3.ONE * 1.14
-            if _model_animation_player != null and _model_animation_player.is_playing() and _model_animation_player.current_animation == "trot":
-                _model_animation_player.stop()
+            _play_3d_animation(["idle", "stand", "rest", "RESET", "ArmatureAction"], 1.0)
+
+
+func _pick_3d_animation_name(candidates: Array[String]) -> String:
+    if _model_animation_player == null or _known_animations.is_empty():
+        return ""
+    for name in candidates:
+        if _model_animation_player.has_animation(name):
+            return name
+    var candidate_keywords: PackedStringArray = []
+    for candidate in candidates:
+        var normalized := candidate.to_lower().strip_edges()
+        if not normalized.is_empty():
+            candidate_keywords.append(normalized)
+    for known_name in _known_animations:
+        var normalized_known := known_name.to_lower()
+        for keyword in candidate_keywords:
+            if normalized_known.find(keyword) != -1:
+                return known_name
+    return _known_animations[0]
+
+
+func _play_3d_animation(candidates: Array[String], speed: float = 1.0) -> void:
+    if _model_animation_player == null:
+        return
+    var chosen := _pick_3d_animation_name(candidates)
+    if chosen.is_empty():
+        return
+    if (not _model_animation_player.is_playing()) or _model_animation_player.current_animation != chosen:
+        _model_animation_player.play(chosen)
+    _model_animation_player.speed_scale = speed
 
 
 func _desktop_bounds() -> Vector2:

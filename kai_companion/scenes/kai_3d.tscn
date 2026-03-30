@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/kai_3d.gd" id="1_script"]
+[ext_resource type="Theme" path="res://assets/kai/kai_theme.tres" id="2_theme"]
 
 [node name="Kai3D" type="Node"]
 script = ExtResource("1_script")
@@ -9,7 +10,7 @@ use_hologram_material = false
 [node name="World" type="Node3D" parent="."]
 
 [node name="Camera" type="Camera3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 3.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.98, 4.2)
 current = true
 
 [node name="KeyLight" type="DirectionalLight3D" parent="World"]
@@ -32,53 +33,134 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
+theme = ExtResource("2_theme")
+
+[node name="TopBar" type="HBoxContainer" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = 40.0
+grow_horizontal = 2
+
+[node name="StatusLabel" type="Label" parent="UI/Root/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.545, 0.451, 0.333, 1.0)
+theme_override_font_sizes/font_size = 12
+text = "Kai"
+
+[node name="MoodLabel" type="Label" parent="UI/Root/TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.769, 0.451, 0.227, 1.0)
+theme_override_font_sizes/font_size = 12
+text = "Attentive"
 
 [node name="Bubble" type="PanelContainer" parent="UI/Root"]
 offset_left = 12.0
-offset_top = 12.0
-offset_right = 252.0
-offset_bottom = 92.0
+offset_top = 48.0
+offset_right = 280.0
+offset_bottom = 110.0
 mouse_filter = 2
 
 [node name="BubbleLabel" type="Label" parent="UI/Root/Bubble"]
-custom_minimum_size = Vector2(210, 0)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.961, 0.902, 0.816, 1.0)
 theme_override_font_sizes/font_size = 16
 text = "Kai booting up..."
 autowrap_mode = 3
 
-[node name="ChatPanel" type="PanelContainer" parent="UI/Root"]
+[node name="ChatOverlay" type="PanelContainer" parent="UI/Root"]
 visible = false
-offset_left = 12.0
-offset_top = 270.0
-offset_right = 328.0
-offset_bottom = 408.0
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -320.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
 
-[node name="Margin" type="MarginContainer" parent="UI/Root/ChatPanel"]
+[node name="ChatVBox" type="VBoxContainer" parent="UI/Root/ChatOverlay"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/separation = 8
 
-[node name="VBox" type="VBoxContainer" parent="UI/Root/ChatPanel/Margin"]
+[node name="ChatLog" type="RichTextLabel" parent="UI/Root/ChatOverlay/ChatVBox"]
 layout_mode = 2
-
-[node name="ChatLog" type="RichTextLabel" parent="UI/Root/ChatPanel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 100)
-layout_mode = 2
+size_flags_vertical = 3
 bbcode_enabled = true
+theme_override_colors/default_color = Color(0.961, 0.902, 0.816, 1.0)
+theme_override_styles/normal = SubResource("StyleBoxFlat_log")
 
-[node name="InputRow" type="HBoxContainer" parent="UI/Root/ChatPanel/Margin/VBox"]
+[node name="InputRow" type="HBoxContainer" parent="UI/Root/ChatOverlay/ChatVBox"]
 layout_mode = 2
 
-[node name="ChatInput" type="LineEdit" parent="UI/Root/ChatPanel/Margin/VBox/InputRow"]
+[node name="ChatInput" type="LineEdit" parent="UI/Root/ChatOverlay/ChatVBox/InputRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "Chat with Kai..."
+placeholder_text = "Talk to Kai..."
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+theme_override_colors/font_placeholder_color = Color(0.545, 0.451, 0.333, 0.6)
 
-[node name="SendButton" type="Button" parent="UI/Root/ChatPanel/Margin/VBox/InputRow"]
+[node name="VoiceButton" type="Button" parent="UI/Root/ChatOverlay/ChatVBox/InputRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 0)
+text = "🎤"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+tooltip_text = "Hold to speak"
+
+[node name="SendButton" type="Button" parent="UI/Root/ChatOverlay/ChatVBox/InputRow"]
 layout_mode = 2
 text = "Send"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+
+[node name="ActionBar" type="HBoxContainer" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -340.0
+offset_right = -8.0
+offset_bottom = -316.0
+grow_horizontal = 2
+
+[node name="ChatToggle" type="Button" parent="UI/Root/ActionBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "💬 Chat"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+
+[node name="PetButton" type="Button" parent="UI/Root/ActionBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "✋ Pet"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
+
+[node name="WalkButton" type="Button" parent="UI/Root/ActionBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🐾 Walk"
+theme_override_colors/font_color = Color(0.969, 0.922, 0.82, 1.0)
 
 [node name="HTTPRequest" type="HTTPRequest" parent="UI/Root"]
+
+[node name="BarkPlayer" type="AudioStreamPlayer" parent="."]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_log"]
+bg_color = Color(0.078, 0.063, 0.047, 0.9)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0

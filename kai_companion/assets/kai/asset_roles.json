@@ -1,0 +1,59 @@
+{
+  "status": "canonical_appearance_locked",
+  "canonical_appearance_asset": {
+    "path": "res://assets/kai/kai_textured.glb",
+    "role": "photo_replica",
+    "notes": [
+      "This is the current closest visual Kai likeness asset.",
+      "It is the only runtime identity asset the companion should load today."
+    ]
+  },
+  "canonical_rig_target": {
+    "path": "res://assets/kai/kai_textured_rigged.glb",
+    "role": "provisional_rigged_photo_replica",
+    "notes": [
+      "This path now has a locally weight-baked rig candidate with a preserved walk-like action and breathing clip.",
+      "It is still a promotion candidate rather than the default live identity until likeness, materials, and motion are validated together."
+    ]
+  },
+  "mixamo_upload_staging": {
+    "path": "res://assets/kai/kai_mixamo_ready.fbx",
+    "role": "upload_staging_only",
+    "notes": [
+      "This is the upload-staging export derived from the canonical photo replica.",
+      "Do not treat it as proof of a real rig or use it as the direct rig-runtime source."
+    ]
+  },
+  "mixamo_rig_source": {
+    "path": "res://assets/kai/kai_mixamo_rigged_source.fbx",
+    "role": "validated_rig_source_required",
+    "notes": [
+      "This file should be the post-Mixamo download with a real armature and walk-like action.",
+      "The rig-runtime prep script should fail if this file is missing or unrigged."
+    ]
+  },
+  "experimental_bootstrap_rig_source": {
+    "path": "res://assets/kai/kai_donor_bootstrap_rig_source.fbx",
+    "role": "experimental_local_bootstrap",
+    "notes": [
+      "This is a locally bootstrapped rig source that weight-bakes the canonical mesh against the donor armature for evaluation.",
+      "Treat it as an experimental bridge asset, not as validated final Kai rigging."
+    ]
+  },
+  "motion_reference_donor": {
+    "path": "res://assets/kai/kai-lite.glb",
+    "role": "low_poly_motion_reference",
+    "notes": [
+      "This asset is not the canonical Kai likeness and must not be loaded as Kai's runtime identity.",
+      "Use it only as a motion or rig reference during transition work."
+    ]
+  },
+  "legacy_outputs": [
+    "res://assets/kai/kai_animated.glb"
+  ],
+  "non_canonical_placeholder_assets": [
+    "res://assets/kai/modelToUsed.glb",
+    "res://assets/kai/kai_runtime_candidate.glb",
+    "res://assets/kai/kai.glb"
+  ]
+}

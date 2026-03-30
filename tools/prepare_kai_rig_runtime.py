@@ -1,186 +1,242 @@
-from __future__ import annotations
+"""
+Kai Rig Prep Script (Blender)
+Import Mixamo-rigged FBX, validate, fix weights, export GLB for Godot.
 
-from pathlib import Path
-import re
+Usage:
+  1. Upload kai_mixamo_ready.fbx to Mixamo.com
+  2. Place markers, download rigged FBX
+  3. Save as kai_mixamo_rigged_source.fbx in the kai assets folder
+  4. Open Blender, run this script
+
+Requires:
+  - kai_mixamo_rigged_source.fbx (from Mixamo)
+  - kai_textured.glb (canonical mesh for UV/texture reference)
+  - kai_baked_albedo.png (from bake_kai_texture.py, if available)
+"""
 
 import bpy
+import os
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+SCRIPT_DIR = Path(bpy.data.filepath).parent if bpy.data.filepath else Path.home() / "Desktop" / "Kai-AI-Project" / "kai_companion" / "assets" / "kai"
+MIXAMO_SOURCE = SCRIPT_DIR / "kai_mixamo_rigged_source.fbx"
+CANONICAL_GLB = SCRIPT_DIR / "kai_textured.glb"
+BAKED_TEXTURE = SCRIPT_DIR / "kai_baked_albedo.png"
+OUTPUT_GLB = SCRIPT_DIR / "kai_textured_rigged.glb"
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def clear_scene():
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete()
+    for obj in bpy.data.objects:
+        bpy.data.objects.remove(obj)
+    for mesh in bpy.data.meshes:
+        bpy.data.meshes.remove(mesh)
+    for arm in bpy.data.armatures:
+        bpy.data.armatures.remove(arm)
 
 
-ROOT = Path(r"C:\Users\7nujy6xc\OneDrive\Documents\Playground\kai-ai")
-ASSET_DIR = ROOT / "kai_companion" / "assets" / "kai"
-RIGGED_SOURCE_PATH = ASSET_DIR / "kai_mixamo_rigged_source.fbx"
-BAKED_ALBEDO_PATH = ASSET_DIR / "kai_baked_albedo.png"
-PAINT_TEXTURE_PATH = ASSET_DIR / "kai_texture_paint.png"
-PHOTO_TEXTURE_PATH = ASSET_DIR / "kai_photo_clean.png"
-OUTPUT_PATH = ASSET_DIR / "kai_textured_rigged.glb"
-
-
-def reset_scene() -> None:
-    bpy.ops.wm.read_factory_settings(use_empty=True)
-
-
-def import_rigged_source() -> None:
-    if not RIGGED_SOURCE_PATH.exists():
-        raise FileNotFoundError(
-            f"Missing Mixamo source: {RIGGED_SOURCE_PATH}\n"
-            "Save the downloaded Mixamo FBX in kai_companion/assets/kai/ before running this script."
-        )
-    bpy.ops.import_scene.fbx(filepath=str(RIGGED_SOURCE_PATH), automatic_bone_orientation=True)
-
-
-def find_primary_armature() -> bpy.types.Object:
-    armatures = [obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"]
-    if not armatures:
-        raise RuntimeError("No armature was imported from the Mixamo FBX.")
-    return max(armatures, key=lambda obj: len(obj.data.bones))
-
-
-def find_meshes() -> list[bpy.types.Object]:
-    meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
-    if not meshes:
-        raise RuntimeError("No mesh objects were imported from the Mixamo FBX.")
-    return meshes
-
-
-def clean_name(name: str) -> str:
-    name = name.replace("mixamorig:", "")
-    name = name.replace("mixamorig_", "")
-    name = re.sub(r"[^A-Za-z0-9_]+", "_", name)
-    name = re.sub(r"_+", "_", name).strip("_")
-    return name or "Bone"
-
-
-def clean_bone_names(armature: bpy.types.Object, meshes: list[bpy.types.Object]) -> None:
-    rename_map: dict[str, str] = {}
-    used_names: set[str] = set()
-    for bone in armature.data.bones:
-        new_name = clean_name(bone.name)
-        base_name = new_name
-        suffix = 1
-        while new_name in used_names:
-            suffix += 1
-            new_name = f"{base_name}_{suffix}"
-        used_names.add(new_name)
-        rename_map[bone.name] = new_name
-
-    for bone in armature.data.bones:
-        old_name = bone.name
-        bone.name = rename_map[old_name]
-
-    for mesh in meshes:
-        for group in mesh.vertex_groups:
-            if group.name in rename_map:
-                group.name = rename_map[group.name]
-
-
-def validate_bones(armature: bpy.types.Object) -> None:
-    bone_names = [bone.name.lower() for bone in armature.data.bones]
-    if len(bone_names) < 12:
-        raise RuntimeError(
-            f"Mixamo armature looks incomplete: only found {len(bone_names)} bones."
-        )
-
-    recommended_groups = {
-        "root_or_hips": ("hip", "pelvis", "root"),
-        "spine": ("spine",),
-        "head": ("head", "neck"),
-        "front_leg_left": ("leftarm", "leftshoulder", "leftfore"),
-        "front_leg_right": ("rightarm", "rightshoulder", "rightfore"),
-        "hind_leg_left": ("leftupleg", "leftleg", "leftfoot"),
-        "hind_leg_right": ("rightupleg", "rightleg", "rightfoot"),
-    }
-    missing = [
-        label
-        for label, tokens in recommended_groups.items()
-        if not any(token in bone_name for token in tokens for bone_name in bone_names)
-    ]
-    if missing:
-        print(f"Warning: some expected rig groups were not found: {', '.join(missing)}")
-
-
-def choose_texture_path() -> Path:
-    for candidate in (BAKED_ALBEDO_PATH, PAINT_TEXTURE_PATH, PHOTO_TEXTURE_PATH):
-        if candidate.exists():
-            return candidate
-    raise FileNotFoundError(
-        f"No Kai texture found. Expected one of: {BAKED_ALBEDO_PATH.name}, "
-        f"{PAINT_TEXTURE_PATH.name}, {PHOTO_TEXTURE_PATH.name}"
-    )
-
-
-def apply_texture(meshes: list[bpy.types.Object], armature: bpy.types.Object) -> None:
-    image = bpy.data.images.load(str(choose_texture_path()), check_existing=True)
-    image.file_format = "PNG"
-
-    material = bpy.data.materials.get("KaiRiggedMaterial")
-    if material is None:
-        material = bpy.data.materials.new(name="KaiRiggedMaterial")
-        material.use_nodes = True
-
-    nodes = material.node_tree.nodes
-    links = material.node_tree.links
-    for node in list(nodes):
-        nodes.remove(node)
-
-    output = nodes.new("ShaderNodeOutputMaterial")
-    output.location = (420, 0)
-
-    principled = nodes.new("ShaderNodeBsdfPrincipled")
-    principled.location = (140, 0)
-    principled.inputs["Roughness"].default_value = 0.88
-
-    image_node = nodes.new("ShaderNodeTexImage")
-    image_node.location = (-180, 0)
-    image_node.image = image
-    image_node.interpolation = "Smart"
-
-    links.new(image_node.outputs["Color"], principled.inputs["Base Color"])
-    links.new(principled.outputs["BSDF"], output.inputs["Surface"])
-
-    for mesh in meshes:
-        mesh.data.materials.clear()
-        mesh.data.materials.append(material)
-        modifier = next((mod for mod in mesh.modifiers if mod.type == "ARMATURE"), None)
-        if modifier is None:
-            modifier = mesh.modifiers.new(name="KaiArmature", type="ARMATURE")
-        modifier.object = armature
-
-
-def normalize_scene_objects(armature: bpy.types.Object, meshes: list[bpy.types.Object]) -> None:
-    armature.name = "KaiArmature"
-    armature.data.name = "KaiArmatureData"
-    for index, mesh in enumerate(meshes, start=1):
-        mesh.name = "KaiMesh" if index == 1 else f"KaiMesh_{index}"
-
-
-def export_rigged_glb() -> None:
-    bpy.ops.object.select_all(action="DESELECT")
+def import_mixamo_fbx(path):
+    """Import Mixamo FBX and return (armature, mesh) objects."""
+    bpy.ops.import_scene.fbx(filepath=str(path))
+    
+    armature = None
+    mesh = None
+    
     for obj in bpy.context.scene.objects:
-        if obj.type in {"MESH", "ARMATURE"}:
-            obj.select_set(True)
+        if obj.type == 'ARMATURE':
+            armature = obj
+        elif obj.type == 'MESH':
+            mesh = obj
+    
+    if not armature:
+        raise RuntimeError("No armature found in Mixamo FBX")
+    if not mesh:
+        raise RuntimeError("No mesh found in Mixamo FBX")
+    
+    # Parent mesh to armature if not already
+    if mesh.parent != armature:
+        bpy.ops.object.select_all(action='DESELECT')
+        mesh.select_set(True)
+        armature.select_set(True)
+        bpy.context.view_layer.objects.active = armature
+        bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+    
+    return armature, mesh
+
+
+def validate_rig(armature):
+    """Check the rig has the essential bones."""
+    bone_names = [b.name for b in armature.data.bones]
+    
+    required_bones = [
+        'mixamorig:Hips',
+        'mixamorig:Spine',
+        'mixamorig:Head',
+        'mixamorig:LeftUpLeg',
+        'mixamorig:RightUpLeg',
+        'mixamorig:LeftArm',
+        'mixamorig:RightArm',
+    ]
+    
+    missing = [b for b in required_bones if b not in bone_names]
+    
+    if missing:
+        print(f"WARNING: Missing bones: {missing}")
+        print(f"Available bones: {bone_names}")
+        # Try to find alternative bone names (non-Mixamo rigs)
+        print("If using a non-Mixamo rig, adjust the bone names in this script.")
+    else:
+        print(f"Rig validated: {len(bone_names)} bones, all required bones present")
+    
+    return len(missing) == 0
+
+
+def fix_bone_names(armature):
+    """Clean up Mixamo bone names (remove 'mixamorig:' prefix for Godot)."""
+    for bone in armature.data.bones:
+        if bone.name.startswith('mixamorig:'):
+            bone.name = bone.name.replace('mixamorig:', '')
+    print("Bone names cleaned (removed 'mixamorig:' prefix)")
+
+
+def check_animations(armature):
+    """List available animations on the armature."""
+    if not armature.animation_data or not armature.animation_data.action:
+        print("WARNING: No animation action found on armature")
+        print("Add animations in Mixamo before downloading, or add them manually in Blender")
+        return []
+    
+    actions = [armature.animation_data.action.name]
+    print(f"Animation: {actions[0]} ({armature.animation_data.action.frame_range[1]} frames)")
+    return actions
+
+
+def apply_texture(mesh, texture_path):
+    """Apply baked texture to the mesh material."""
+    if not texture_path.exists():
+        print(f"WARNING: Baked texture not found: {texture_path}")
+        print("Run bake_kai_texture.py first, or apply texture manually")
+        return
+    
+    # Clear materials
+    mesh.data.materials.clear()
+    
+    # Create material
+    mat = bpy.data.materials.new(name="KaiMaterial")
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    nodes.clear()
+    
+    # Standard PBR setup
+    output = nodes.new('ShaderNodeOutputMaterial')
+    output.location = (400, 0)
+    
+    bsdf = nodes.new('ShaderNodeBsdfPrincipled')
+    bsdf.location = (100, 0)
+    bsdf.inputs['Roughness'].default_value = 0.7  # Fur-like roughness
+    
+    # Load texture
+    tex = nodes.new('ShaderNodeTexImage')
+    tex.image = bpy.data.images.load(str(texture_path))
+    tex.location = (-300, 0)
+    
+    # UV Map
+    uv = nodes.new('ShaderNodeUVMap')
+    uv.location = (-500, 0)
+    
+    # Connect
+    links.new(uv.outputs['UV'], tex.inputs['Vector'])
+    links.new(tex.outputs['Color'], bsdf.inputs['Base Color'])
+    links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
+    
+    mesh.data.materials.append(mat)
+    print(f"Texture applied: {texture_path.name}")
+
+
+def export_for_godot(armature, output_path):
+    """Export rigged mesh as GLB for Godot."""
+    bpy.ops.object.select_all(action='DESELECT')
+    armature.select_set(True)
+    for child in armature.children:
+        child.select_set(True)
+    bpy.context.view_layer.objects.active = armature
+    
     bpy.ops.export_scene.gltf(
-        filepath=str(OUTPUT_PATH),
-        export_format="GLB",
-        use_selection=True,
-        export_apply=True,
-        export_texcoords=True,
-        export_normals=True,
-        export_materials="EXPORT",
-        export_image_format="AUTO",
+        filepath=str(output_path),
+        export_format='GLB',
+        export_selected=True,
+        export_animations=True,
+        export_skins=True,
+        export_morph=True,
+        export_materials='EXPORT',
     )
+    print(f"Exported for Godot: {output_path}")
 
 
-def main() -> None:
-    reset_scene()
-    import_rigged_source()
-    armature = find_primary_armature()
-    meshes = find_meshes()
-    clean_bone_names(armature, meshes)
-    validate_bones(armature)
-    normalize_scene_objects(armature, meshes)
-    apply_texture(meshes, armature)
-    export_rigged_glb()
-    print(f"Rigged Kai GLB exported to: {OUTPUT_PATH}")
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    print("=" * 50)
+    print("Kai Rig Prep Pipeline")
+    print("=" * 50)
+    
+    if not MIXAMO_SOURCE.exists():
+        print(f"ERROR: Mixamo source not found: {MIXAMO_SOURCE}")
+        print("Download the rigged FBX from Mixamo and save it as:")
+        print(f"  {MIXAMO_SOURCE}")
+        return
+    
+    print(f"Mixamo source: {MIXAMO_SOURCE}")
+    print(f"Output: {OUTPUT_GLB}")
+    print()
+    
+    # Step 1: Clear
+    print("Step 1: Clearing scene...")
+    clear_scene()
+    
+    # Step 2: Import
+    print("Step 2: Importing Mixamo FBX...")
+    armature, mesh = import_mixamo_fbx(MIXAMO_SOURCE)
+    print(f"  Armature: {armature.name}, {len(armature.data.bones)} bones")
+    print(f"  Mesh: {mesh.name}, {len(mesh.data.vertices)} vertices")
+    
+    # Step 3: Validate
+    print("Step 3: Validating rig...")
+    validate_rig(armature)
+    
+    # Step 4: Clean bone names
+    print("Step 4: Cleaning bone names...")
+    fix_bone_names(armature)
+    
+    # Step 5: Check animations
+    print("Step 5: Checking animations...")
+    check_animations(armature)
+    
+    # Step 6: Apply texture
+    print("Step 6: Applying texture...")
+    apply_texture(mesh, BAKED_TEXTURE)
+    
+    # Step 7: Export
+    print("Step 7: Exporting for Godot...")
+    export_for_godot(armature, OUTPUT_GLB)
+    
+    print()
+    print("=" * 50)
+    print("DONE!")
+    print(f"Rigged model: {OUTPUT_GLB}")
+    print("Import this in Godot as Kai's runtime identity.")
+    print("=" * 50)
 
 
 if __name__ == "__main__":

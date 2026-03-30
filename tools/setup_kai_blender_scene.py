@@ -9,7 +9,8 @@ import bpy
 ROOT = Path(r"C:\Users\7nujy6xc\OneDrive\Documents\Playground\kai-ai")
 ASSET_DIR = ROOT / "kai_companion" / "assets" / "kai"
 REFERENCE_DIR = ASSET_DIR / "reference"
-MODEL_PATH = ASSET_DIR / "modelToUsed.glb"
+CANONICAL_MODEL_PATH = ASSET_DIR / "kai_textured.glb"
+LEGACY_LINEAGE_MODEL_PATH = ASSET_DIR / "modelToUsed.glb"
 TEXTURE_PATH = ASSET_DIR / "kai_texture_paint.png"
 BLEND_PATH = ASSET_DIR / "kai_texture_workspace.blend"
 
@@ -33,21 +34,27 @@ def reset_scene() -> None:
     bg.inputs[1].default_value = 0.4
 
 
-def ensure_texture_image() -> bpy.types.Image:
+def resolve_model_path() -> Path | None:
+    if CANONICAL_MODEL_PATH.exists():
+        return CANONICAL_MODEL_PATH
+    if LEGACY_LINEAGE_MODEL_PATH.exists():
+        print("Canonical kai_textured.glb not found; falling back to legacy lineage modelToUsed.glb")
+        return LEGACY_LINEAGE_MODEL_PATH
+    return None
+
+
+def ensure_texture_image() -> bpy.types.Image | None:
     if TEXTURE_PATH.exists():
         return bpy.data.images.load(str(TEXTURE_PATH), check_existing=True)
-    image = bpy.data.images.new("kai_texture_paint", width=2048, height=2048, alpha=False)
-    image.generated_color = (0.08, 0.07, 0.06, 1.0)
-    image.filepath_raw = str(TEXTURE_PATH)
-    image.file_format = "PNG"
-    image.save()
-    return image
+    print("kai_texture_paint.png is missing; preserving imported materials instead of creating a placeholder coat.")
+    return None
 
 
 def import_model() -> bpy.types.Object | None:
-    if not MODEL_PATH.exists():
+    model_path = resolve_model_path()
+    if model_path is None:
         return None
-    bpy.ops.import_scene.gltf(filepath=str(MODEL_PATH))
+    bpy.ops.import_scene.gltf(filepath=str(model_path))
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
     if not meshes:
         return None
@@ -59,7 +66,9 @@ def import_model() -> bpy.types.Object | None:
     return model
 
 
-def assign_material(model: bpy.types.Object, image: bpy.types.Image) -> None:
+def assign_material(model: bpy.types.Object, image: bpy.types.Image | None) -> None:
+    if image is None:
+        return
     material = bpy.data.materials.new(name="KaiPaintMaterial")
     material.use_nodes = True
     nodes = material.node_tree.nodes
