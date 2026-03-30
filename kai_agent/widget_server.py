@@ -1,30 +1,21 @@
 import argparse
 import asyncio
 import json
-import queue
-import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
 from kai_agent.assistant import KaiAssistant
-from kai_agent.bridge_auth import KaiBridgeAuth
 
 
 ROOT = Path(__file__).resolve().parents[1]
 WIDGET_DIR = ROOT / "widget"
-CHAT_TIMEOUT_SECONDS = 18
 STATIC_FILES = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/index.html": ("index.html", "text/html; charset=utf-8"),
     "/styles.css": ("styles.css", "text/css; charset=utf-8"),
     "/app.js": ("app.js", "application/javascript; charset=utf-8"),
-    "/sw.js": ("sw.js", "application/javascript; charset=utf-8"),
-    "/manifest.json": ("manifest.json", "application/json"),
-    "/kai-logo.svg": ("kai-logo.svg", "image/svg+xml"),
-    "/paw.svg": ("paw.svg", "image/svg+xml"),
-    "/favicon.svg": ("favicon.svg", "image/svg+xml"),
 }
 
 
@@ -32,68 +23,15 @@ class KaiWidgetServer(ThreadingHTTPServer):
     def __init__(self, server_address, handler_class, assistant: KaiAssistant) -> None:
         super().__init__(server_address, handler_class)
         self.assistant = assistant
-        self.auth = KaiBridgeAuth(save_path=assistant.workspace / "memory" / "devices.json")
-        self.pending_messages: list[dict] = []  # Proactive messages waiting for widget
 
 
 class Handler(BaseHTTPRequestHandler):
     server: KaiWidgetServer
 
-    def _local_chat_fallback(self, message: str, error_text: str = "") -> str:
-        lowered = message.lower()
-        if any(token in lowered for token in ("hi", "hello", "hey")):
-            return "Kai is here. The local model is dragging right now, but the chat link is alive."
-        if "help" in lowered:
-            return "Kai's model backend is slow right now. Shorter prompts usually work better while it recovers."
-        if "status" in lowered or "working" in lowered:
-            return "The chat path is up, but the local model backend is timing out."
-        if error_text:
-            return f"Kai hit a local model issue: {error_text}"
-        return "Kai's local model is slow right now, but the companion chat path is still alive."
-
     def do_GET(self) -> None:
         route = urlparse(self.path).path
         if route == "/api/health":
             self._send_json({"ok": True})
-            return
-
-        if route == "/api/status":
-            status = {}
-            if hasattr(self.server, 'assistant'):
-                a = self.server.assistant
-                # Emotional state
-                if hasattr(a, 'emotions'):
-                    status["emotion"] = a.emotions.get_state()
-                # Relationship
-                if hasattr(a, 'relationship'):
-                    status["relationship"] = a.relationship.get_stats()
-                # Social timing
-                if hasattr(a, 'social_timing'):
-                    status["timing"] = a.social_timing.get_status()
-                # Inner monologue
-                if hasattr(a, 'inner_voice'):
-                    status["thoughts"] = a.inner_voice.get_stats()
-                # Memory
-                if hasattr(a, 'semantic_mem'):
-                    status["memory"] = a.semantic_mem.get_stats()
-            self._send_json(status)
-            return
-
-        if route == "/api/mood":
-            mood_data = {"mood": "neutral", "emoji": "🦊", "modifiers": []}
-            if hasattr(self.server, 'assistant') and hasattr(self.server.assistant, 'emotions'):
-                mood_data = self.server.assistant.emotions.get_response_color()
-                state = self.server.assistant.emotions.get_state()
-                mood_data["dimensions"] = state["dimensions"]
-            self._send_json(mood_data)
-            return
-
-        if route == "/api/pending":
-            messages = []
-            if hasattr(self.server, 'assistant') and hasattr(self.server.assistant, 'pending_messages'):
-                messages = list(self.server.assistant.pending_messages)
-                self.server.assistant.pending_messages.clear()
-            self._send_json({"messages": messages})
             return
 
         target = STATIC_FILES.get(route)
@@ -111,50 +49,6 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         route = urlparse(self.path).path
-
-        length = int(self.headers.get("Content-Length", "0"))
-        raw_body = self.rfile.read(length)
-        payload = json.loads(raw_body.decode("utf-8") or "{}")
-
-        # Device registration
-        if route == "/api/device/register":
-            name = payload.get("device_name", "unknown")
-            dtype = payload.get("device_type", "browser")
-            result = self.server.auth.register_device(name, dtype)
-            self._send_json(result)
-            return
-
-        # Device authentication
-        if route == "/api/device/auth":
-            device_id = payload.get("device_id", "")
-            token = payload.get("token", "")
-            ok = self.server.auth.authenticate(device_id, token)
-            self._send_json({"ok": ok}, HTTPStatus.OK if ok else HTTPStatus.UNAUTHORIZED)
-            return
-
-        # Device heartbeat
-        if route == "/api/device/heartbeat":
-            device_id = payload.get("device_id", "")
-            token = payload.get("token", "")
-            if self.server.auth.authenticate(device_id, token):
-                self.server.auth.set_active(device_id, "ws")
-                self._send_json({"ok": True})
-            else:
-                self._send_json({"ok": False}, HTTPStatus.UNAUTHORIZED)
-            return
-
-        # Push endpoint registration
-        if route == "/api/device/push":
-            device_id = payload.get("device_id", "")
-            token = payload.get("token", "")
-            endpoint = payload.get("endpoint", "")
-            if self.server.auth.authenticate(device_id, token):
-                self.server.auth.set_push_endpoint(device_id, endpoint)
-                self._send_json({"ok": True})
-            else:
-                self._send_json({"ok": False}, HTTPStatus.UNAUTHORIZED)
-            return
-
         if route != "/api/chat":
             self.send_error(HTTPStatus.NOT_FOUND)
             return
@@ -169,26 +63,9 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         try:
-            result_queue: queue.Queue[tuple[str, str]] = queue.Queue(maxsize=1)
-
-            def _worker() -> None:
-                try:
-                    reply = asyncio.run(self.server.assistant.ask(message))
-                    result_queue.put_nowait(("reply", reply))
-                except Exception as exc:
-                    result_queue.put_nowait(("error", str(exc)))
-
-            worker = threading.Thread(target=_worker, name="kai-widget-chat", daemon=True)
-            worker.start()
-            worker.join(CHAT_TIMEOUT_SECONDS)
-            if worker.is_alive():
-                raise TimeoutError(f"Kai widget chat exceeded {CHAT_TIMEOUT_SECONDS}s")
-            status, value = result_queue.get_nowait()
-            if status == "error":
-                raise RuntimeError(value)
-            reply = value
+            reply = asyncio.run(self.server.assistant.ask(message))
         except Exception as exc:
-            self._send_json({"reply": self._local_chat_fallback(message, str(exc)), "degraded": True})
+            self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_GATEWAY)
             return
 
         self._send_json({"reply": reply})
@@ -206,7 +83,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Kai companion widget server")
+    parser = argparse.ArgumentParser(description="Kai Pip-Boy widget server")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8127)
     parser.add_argument("--model", default="qwen3:4b-q4_K_M")

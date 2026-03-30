@@ -1,2 +1,2 @@
 websockets>=12,<16
-playwright>=1.40
+playwright>=1.52,<2

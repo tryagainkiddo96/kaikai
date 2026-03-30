@@ -19,8 +19,6 @@ PHOTO_SOURCES = {
 }
 
 VIDEO_SOURCE = Path(r"C:\Users\7nujy6xc\Downloads\VID_20260318_080649254.mp4")
-# `modelToUsed.glb` is retained only as the original external base-mesh lineage source
-# that was used to derive the current `kai_textured.glb` photo replica.
 MODEL_SOURCE = Path(r"C:\Users\7nujy6xc\Downloads\glb_6e3065c7-fc22-43ae-9d07-48cd87b34fac\modelToUsed.glb")
 MODEL_TARGET = ROOT / "kai_companion" / "assets" / "kai" / "modelToUsed.glb"
 

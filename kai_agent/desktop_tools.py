@@ -11,8 +11,7 @@ import uuid
 from queue import Empty, Queue
 from pathlib import Path
 
-from kai_agent.browser_tools import BrowserTools
-from kai_agent.document_handler import DocumentHandler
+from kai_agent.browser_signup import BrowserSignupSession
 from kai_agent.tavily_client import TavilyClient
 
 
@@ -30,8 +29,7 @@ class DesktopTools:
         self.kali_lock = threading.Lock()
         self.kali_session_cwd = self._to_wsl_path(self.workspace)
         self.tavily = TavilyClient()
-        self.browser = BrowserTools(workspace)
-        self.documents = DocumentHandler(workspace)
+        self.browser_signup = BrowserSignupSession(workspace)
 
     def classify_command(self, command: str, shell: str = "powershell") -> dict:
         lowered = command.strip().lower()
@@ -243,37 +241,35 @@ class DesktopTools:
         raise RuntimeError("Timed out starting persistent Kali session.")
 
     def stop_kali_session(self) -> str:
-        with self.kali_lock:
-            if not self.kali_process or self.kali_process.poll() is not None:
-                return json.dumps({"action": "kali_session_stop", "ok": True, "message": "Kali session was not running."}, indent=2)
-            try:
-                if self.kali_process.stdin:
-                    self.kali_process.stdin.write(b"exit\n")
-                    self.kali_process.stdin.flush()
-                self.kali_process.wait(timeout=5)
-            except Exception:
-                self.kali_process.kill()
-            finally:
-                self.kali_process = None
-            return json.dumps({"action": "kali_session_stop", "ok": True, "message": "Stopped Kali session."}, indent=2)
+        if not self.kali_process or self.kali_process.poll() is not None:
+            return json.dumps({"action": "kali_session_stop", "ok": True, "message": "Kali session was not running."}, indent=2)
+        try:
+            if self.kali_process.stdin:
+                self.kali_process.stdin.write(b"exit\n")
+                self.kali_process.stdin.flush()
+            self.kali_process.wait(timeout=5)
+        except Exception:
+            self.kali_process.kill()
+        finally:
+            self.kali_process = None
+        return json.dumps({"action": "kali_session_stop", "ok": True, "message": "Stopped Kali session."}, indent=2)
 
     def start_kali_session(self) -> str:
-        with self.kali_lock:
-            try:
-                self.ensure_kali_session()
-                payload = {
-                    "action": "kali_session_start",
-                    "ok": True,
-                    "cwd": self.kali_session_cwd,
-                    "message": "Persistent Kali session is ready.",
-                }
-            except Exception as exc:
-                payload = {
-                    "action": "kali_session_start",
-                    "ok": False,
-                    "cwd": self.kali_session_cwd,
-                    "error": str(exc),
-                }
+        try:
+            self.ensure_kali_session()
+            payload = {
+                "action": "kali_session_start",
+                "ok": True,
+                "cwd": self.kali_session_cwd,
+                "message": "Persistent Kali session is ready.",
+            }
+        except Exception as exc:
+            payload = {
+                "action": "kali_session_start",
+                "ok": False,
+                "cwd": self.kali_session_cwd,
+                "error": str(exc),
+            }
         return json.dumps(payload, indent=2)
 
     def get_kali_session_status(self) -> str:
@@ -411,6 +407,27 @@ class DesktopTools:
 
     def search_web(self, query: str, max_results: int = 5) -> str:
         return json.dumps(self.tavily.search(query=query, max_results=max_results), indent=2)
+
+    def has_pending_browser_signup(self) -> bool:
+        return self.browser_signup.has_pending_input()
+
+    def pending_browser_signup_is_sensitive(self) -> bool:
+        return self.browser_signup.pending_input_is_sensitive()
+
+    def consume_browser_signup_user_log(self, fallback: str) -> str:
+        return self.browser_signup.consume_user_log(fallback)
+
+    def start_browser_signup(self, url: str, method: str = "email") -> str:
+        return json.dumps(self.browser_signup.start(url=url, method=method), indent=2)
+
+    def continue_browser_signup(self, answer: str) -> str:
+        return json.dumps(self.browser_signup.continue_flow(answer), indent=2)
+
+    def browser_signup_status(self) -> str:
+        return json.dumps(self.browser_signup.status(), indent=2)
+
+    def cancel_browser_signup(self) -> str:
+        return json.dumps(self.browser_signup.cancel(), indent=2)
 
     def _run_native(self, args: list[str], timeout: int = 120, cwd: Path | None = None) -> dict:
         try:
@@ -815,64 +832,6 @@ class DesktopTools:
                 if len(entries) >= limit:
                     return "\n".join(entries)
         return "\n".join(entries)
-
-    # Browser automation methods
-    def browse(self, url: str) -> str:
-        """Navigate to a URL."""
-        return self.browser.browse(url)
-
-    def search_browser(self, query: str, site: str = "") -> str:
-        """Search the web using browser automation."""
-        return self.browser.search_web_browser(query, site)
-
-    def get_page_content(self) -> str:
-        """Get text content of the current page."""
-        return self.browser.get_page_content()
-
-    def get_page_links(self) -> str:
-        """Get links on the current page."""
-        return self.browser.get_links()
-
-    def click_link(self, text: str) -> str:
-        """Click a link by text."""
-        return self.browser.click_link(text)
-
-    def fill_form(self, data: dict, form_index: int = 0) -> str:
-        """Fill a form on the current page."""
-        return self.browser.fill_form(data, form_index)
-
-    def find_forms(self) -> str:
-        """Find forms on the current page."""
-        return self.browser.find_forms()
-
-    def download_file(self, url: str = None, filename: str = None) -> str:
-        """Download a file."""
-        return self.browser.download(url, filename)
-
-    def screenshot(self, filename: str = "kai_screenshot.png") -> str:
-        """Take a screenshot."""
-        return self.browser.screenshot(filename)
-
-    # Document methods
-    def list_documents(self, category: str = None) -> str:
-        """List documents."""
-        return self.documents.list_documents(category)
-
-    def find_document(self, query: str) -> str:
-        """Find documents by name."""
-        return self.documents.find_document(query)
-
-    def read_document(self, path: str) -> str:
-        """Read a document."""
-        return self.documents.read_document(path)
-
-    def organize_downloads(self) -> str:
-        """Organize downloaded files."""
-        return self.documents.organize_downloads()
-
-    def document_stats(self) -> str:
-        """Get document library stats."""
-        return self.documents.get_stats()
 
     def _ocr_image(self, image_path: Path, text_base: Path) -> str:
         if not TESSERACT_PATH.exists():
