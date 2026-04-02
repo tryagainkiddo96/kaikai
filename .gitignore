@@ -49,3 +49,6 @@ kai_companion/kai_recovered.png
 !kai_companion/assets/kai/kai_textured_rigged.glb
 !kai_companion/assets/kai/kai_textured_rigged_weightbake_test.glb
 !kai_companion/assets/kai/modelToUsed.glb
+-e 
+.venv/
+.pytest_cache/
