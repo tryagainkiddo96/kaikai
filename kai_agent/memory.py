@@ -197,16 +197,30 @@ class KaiMemory:
             lines.append(f"[{task.get('status', 'queued')}] {task.get('title', '')}")
         return "\n".join(lines)
 
-    def build_memory_context(self, limit: int = 8) -> str:
+    def build_memory_context(self, limit: int = 5) -> str:
         profile = self.load_profile()
         notes = self.load_notes()[-limit:]
         tasks = self.load_tasks()[:limit]
-        parts = [
-            "Kai memory profile:",
-            json.dumps(profile, indent=2),
-            "Recent learned notes:",
-            json.dumps(notes, indent=2),
-            "Task queue:",
-            json.dumps(tasks, indent=2),
-        ]
-        return "\n".join(parts)
+        parts = []
+        name = profile.get("name", "")
+        if name:
+            parts.append(f"User: {name}")
+        if notes:
+            note_texts = []
+            for n in notes:
+                if isinstance(n, dict):
+                    note_texts.append(f"- {n.get('text', str(n))}")
+                else:
+                    note_texts.append(f"- {n}")
+            if note_texts:
+                parts.append("Notes:\n" + "\n".join(note_texts))
+        if tasks:
+            task_texts = []
+            for t in tasks:
+                if isinstance(t, dict):
+                    task_texts.append(f"- [{t.get('status', '?')}] {t.get('text', str(t))}")
+                else:
+                    task_texts.append(f"- {t}")
+            if task_texts:
+                parts.append("Tasks:\n" + "\n".join(task_texts))
+        return "\n".join(parts) if parts else ""

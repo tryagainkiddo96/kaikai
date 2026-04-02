@@ -294,7 +294,7 @@ class SemanticMemory:
         recent = []
         for fact in self.facts:
             try:
-                created = datetime.fromisoformat(fact.created_at.replace("Z", ""))
+                created = datetime.fromisoformat(fact.created_at.replace("Z", "+00:00"))
                 if created >= cutoff:
                     recent.append(fact)
             except Exception:

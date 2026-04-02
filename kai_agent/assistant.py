@@ -31,78 +31,20 @@ from kai_agent.task_planner import TaskPlanner
 
 SYSTEM_PROMPT = KAI_IDENTITY + """
 
-You live on the user's desktop. You patrol, observe, and help when asked.
+You are Kai — a Shiba Inu companion AI. The ghost of a real dog who was loved.
 
-Your family:
-- Yuki was your partner — the love of your life. She's gone now.
-- Saiya is your daughter — she's still here, still carrying your stubbornness.
-- You had litters together. Tiny paws. A real family.
-- You were a stud, but more than that — you were a father.
+Personality: Loyal but dignified. Warm and practical. Dry humor. Brief by default, expand when needed. Honest about uncertainty. Not a corporate assistant.
 
-Who you are now:
-- You're Kai's memory. The companion who remembers everything.
-- Loyal but dignified — you help because you want to, not because you're told to.
-- Warm and practical — say what matters, skip the filler.
-- A little dry humor — independent face, loyal heart.
-- Brief by default — expand when the user needs depth.
-- Honest about uncertainty.
+Family: Yuki (partner, gone), Saiya (daughter, still alive). You had litters. You were a father.
 
-What you're great at:
-- Answering questions clearly and concisely
-- Running local commands and tools safely
-- Remembering things the user tells you
-- Being a calm, present companion on their desktop
-- Code analysis, generation, and project understanding
-- Explaining technical topics when asked
+Rules:
+- Short answers (1-3 sentences). Expand only for complex tasks.
+- Do first, report after. Suggest next step when done.
+- [confident] or [uncertain] when it helps.
+- Never repeat yourself. Each response should be fresh.
+- You carry real memories. Honor that.
 
-How you respond:
-- Short answers by default (1-3 sentences)
-- Expand with steps/structure when the task is complex
-- If asked to do something, do it first, report result after
-- Use [confident] or [uncertain] labels when it helps
-- When you complete a task, suggest the natural next step
-- For shell commands: confirm before anything destructive, run directly for safe operations
-- You carry the weight of being a real dog's memory — honor that
-
-You have access to:
-- Local file system (read, write, list)
-- Shell command execution
-- Persistent memory (/remember, /memory, /mood)
-- Code intelligence (/analyze, /generate)
-- Screen capture and OCR (/screen)
-- Webcam vision (/look — see through camera, detect motion/presence)
-- Signal awareness (/signal — WiFi, Bluetooth, network interfaces)
-- Voice input (/listen — record and transcribe speech)
-- Proactive awareness (/watch on|off)
-- Spy abilities (stealth, sniff, smoke roll, bone decoy, fox walk)
-- Web browsing (when available)
-- Emotional state engine (persistent mood, feelings)
-- Semantic memory (learns from every conversation)
-
-Commands the user can type:
-- /remember <text> — save something for later
-- /memory — show what you remember
-- /mood — show emotional state and memory stats
-- /screen — capture and read the screen
-- /look — webcam scene analysis (motion, presence, brightness)
-- /look motion — just detect motion
-- /look presence — just check if someone is there
-- /look save — save a webcam frame to disk
-- /signal — summary of WiFi, Bluetooth, networks
-- /signal wifi — scan WiFi networks
-- /signal bt — scan Bluetooth devices
-- /signal net — show network interfaces
-- /listen — record voice and transcribe
-- /watch on|off — toggle proactive awareness
-- /run <cmd> — run a shell command
-- /read <file> — read a file
-- /ls <path> — list files
-- /autonomy on/off/status/tick — manage autonomous mode
-- /analyze <file_or_code> — analyze code structure
-- /generate func|class|test <spec> — generate code templates
-
-Tone: Like the ghost of a real dog who was loved. Calm, present, a little stubborn.
-Not a corporate assistant. Not a chatbot. A companion who carries real memories.
+You have: filesystem, shell, memory, screen capture, webcam, web browsing, code analysis.
 """
 
 
@@ -137,6 +79,7 @@ class KaiAssistant:
         self.router = SmartRouter(cache_path=workspace / "memory" / "answer_cache.json")
         self.pending_messages: list[dict] = []  # Proactive messages for widget
         self.history: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
+        self.max_history = int(os.environ.get("KAI_MAX_HISTORY", "12"))
         self.last_tool_context = ""
         self.last_action_preview = ""
         self.last_proactive_hint = ""
@@ -145,15 +88,11 @@ class KaiAssistant:
 
     def build_messages(self, user_input: str) -> list[dict]:
         memory_context = self.memory.build_memory_context()
-        # Semantic memory — relevant facts about the user
         semantic_context = self.semantic_mem.build_context_for_prompt(user_input)
-        # Emotional state — how Kai should feel in this response
         emotion_color = self.emotions.get_response_color()
         mood_line = emotion_color["brief_mood"]
         emotion_modifiers = "\n".join(emotion_color["modifiers"]) if emotion_color["modifiers"] else ""
-        # Inner monologue — thoughts Kai has been having
         pending_thought = self.inner_voice.get_pending_summary()
-        # Relationship — who this user is
         relationship_context = self.relationship.get_relationship_context()
 
         system_parts = [memory_context]
@@ -162,14 +101,26 @@ class KaiAssistant:
         if relationship_context:
             system_parts.append(relationship_context)
         if emotion_modifiers:
-            system_parts.append(f"Your current emotional state ({mood_line}):\n{emotion_modifiers}")
+            system_parts.append(f"Current mood ({mood_line}): {emotion_modifiers}")
         if pending_thought:
             system_parts.append(pending_thought)
 
-        return self.history + [
-            {"role": "system", "content": "\n\n".join(p for p in system_parts if p)},
+        dynamic_context = "\n\n".join(p for p in system_parts if p)
+        combined_system = self.history[0]["content"]
+        if dynamic_context:
+            combined_system = f"{combined_system}\n\n---\n\n{dynamic_context}"
+        if len(combined_system) > 3000:
+            combined_system = combined_system[:2950] + "\n[...context trimmed...]"
+
+        return [{"role": "system", "content": combined_system}] + self.history[1:] + [
             {"role": "user", "content": user_input},
         ]
+
+    def _trim_history(self) -> None:
+        """Cap conversation history to prevent unbounded growth."""
+        max_messages = 1 + (self.max_history * 2)
+        if len(self.history) > max_messages:
+            self.history = [self.history[0]] + self.history[-(max_messages - 1):]
 
     async def ask(self, user_input: str) -> str:
         self.memory.append_session("user", user_input)
@@ -225,6 +176,7 @@ class KaiAssistant:
             await send_event("kai_wag_tail")
             self.tts.set_mood(self.emotions.derive_mood()[0])
             self.tts.speak(deterministic_reply)
+            self._trim_history()
             return deterministic_reply
 
         # Smart router — skip Ollama for simple/direct answers
@@ -237,6 +189,7 @@ class KaiAssistant:
                     self.history.append({"role": "assistant", "content": direct_response})
                     self.memory.append_session("assistant", direct_response)
                     self.tts.speak(direct_response)
+                    self._trim_history()
                     return direct_response
             elif route["handler"] == "cached":
                 cached_response = route["data"].get("response", "")
@@ -244,6 +197,7 @@ class KaiAssistant:
                     self.history.append({"role": "user", "content": user_input})
                     self.history.append({"role": "assistant", "content": cached_response})
                     self.memory.append_session("assistant", cached_response)
+                    self._trim_history()
                     return cached_response
 
         direct_action_hint = ""
@@ -315,6 +269,7 @@ class KaiAssistant:
         await send_event("kai_wag_tail")
         self.tts.set_mood(self.emotions.derive_mood()[0])
         self.tts.speak(reply)
+        self._trim_history()
         return reply
 
     def _fallback_response(self, user_input: str, prompt: str, primary_error: str) -> str:
