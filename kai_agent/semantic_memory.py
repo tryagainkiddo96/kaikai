@@ -10,13 +10,11 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-
-def utc_now() -> str:
-    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+from kai_agent.time_utils import utc_now
 
 
 # ---------------------------------------------------------------------------
@@ -48,8 +46,11 @@ class MemoryFact:
     @property
     def age_days(self) -> float:
         try:
-            created = datetime.fromisoformat(self.created_at.replace("Z", ""))
-            return (datetime.utcnow() - created).total_seconds() / 86400
+            created = datetime.fromisoformat(self.created_at.replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            return max(0, (now - created).total_seconds() / 86400)
         except Exception:
             return 0
 
@@ -289,7 +290,7 @@ class SemanticMemory:
 
     def get_recent(self, days: int = 7, limit: int = 10) -> list[MemoryFact]:
         """Get recently added facts."""
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         recent = []
         for fact in self.facts:
             try:
