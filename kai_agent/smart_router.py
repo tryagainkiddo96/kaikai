@@ -32,12 +32,6 @@ class SmartRouter:
     DIRECT_PATTERNS = [
         (re.compile(r"^what time is it", re.I), "time"),
         (re.compile(r"^what(?:'s| is) the (?:date|day)", re.I), "date"),
-        (re.compile(r"^(?:hi|hello|hey|sup|yo)\s*[!.?]*$", re.I), "greeting"),
-        (re.compile(r"^(?:thanks|thank you|thx|ty)\s*[!.?]*$", re.I), "thanks"),
-        (re.compile(r"^(?:bye|goodbye|see ya|later|gn)\s*[!.?]*$", re.I), "farewell"),
-        (re.compile(r"^how are you", re.I), "how_are_you"),
-        (re.compile(r"^what(?:'s| is) your name", re.I), "name"),
-        (re.compile(r"^who are you", re.I), "identity"),
         (re.compile(r"^(\d+\s*[\+\-\*\/\%\^]\s*\d+.*=?\s*)$", re.I), "math"),
         (re.compile(r"^what is (\d+)", re.I), "math"),
         (re.compile(r"^calculate", re.I), "math"),
@@ -157,7 +151,7 @@ class SmartRouter:
     # -- Direct answers --
 
     def _get_direct_answer(self, answer_type: str, text: str) -> dict[str, Any]:
-        """Generate a direct answer without any LLM."""
+        """Generate a direct answer without any LLM. Only for factual/time/math."""
         from datetime import datetime
 
         if answer_type == "time":
@@ -168,35 +162,8 @@ class SmartRouter:
             now = datetime.now().strftime("%A, %B %d, %Y")
             return {"response": f"Today is {now}."}
 
-        elif answer_type == "greeting":
-            hour = datetime.now().hour
-            if hour < 12:
-                return {"response": "Morning. ☀️"}
-            elif hour < 17:
-                return {"response": "Hey. 🦊"}
-            elif hour < 21:
-                return {"response": "Evening. 🌙"}
-            else:
-                return {"response": "Hey. Burning the midnight oil? 🌙"}
-
-        elif answer_type == "thanks":
-            return {"response": "Anytime. 🐾"}
-
-        elif answer_type == "farewell":
-            return {"response": "Later. I'll be here. 🦊"}
-
-        elif answer_type == "how_are_you":
-            return {"response": "Good. Watching the window. You?"}
-
-        elif answer_type == "name":
-            return {"response": "Kai. Named after a real Shiba Inu. Black and tan."}
-
-        elif answer_type == "identity":
-            return {"response": "I'm Kai. A black and tan Shiba Inu. Your desktop companion. I remember things, run commands, and keep watch."}
-
         elif answer_type == "math":
             try:
-                # Extract and evaluate simple math
                 expr = re.search(r"(\d+\s*[\+\-\*\/\%\^]\s*\d+[\d\s\+\-\*\/\%\^\.]*)", text)
                 if expr:
                     result = eval(expr.group(1).replace("^", "**"))
