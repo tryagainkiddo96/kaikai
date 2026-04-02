@@ -20,8 +20,8 @@ def test_direct_time():
 def test_direct_greeting():
     r = SmartRouter(cache_path=Path(tempfile.mktemp()))
     result = r.route("hello")
-    assert result["handler"] == "direct"
-    assert result["type"] == "greeting"
+    # Greetings now go to Ollama for natural Kai personality
+    assert result["handler"] == "ollama"
 
 
 def test_direct_math():
