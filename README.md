@@ -1,14 +1,21 @@
-# Kai 🦊
+# Kai
 
 A personal AI companion inspired by a Shiba Inu named Kai.
 
-Kai is a local-first AI assistant with a 3D desktop companion — a black and tan Shiba Inu that lives on your desktop, patrols, reacts to events, and chats with you through a local Ollama model.
+Kai is a local-first AI assistant with a 3D desktop companion. It is one project with one assistant brain and multiple frontends:
+
+- `kai_agent/assistant.py` is the primary assistant brain
+- `kai_agent/desktop_panel_unified.py` is the control surface
+- `kai_companion/` is the visual surface
+- `bridge/` is transport, not a second brain
+
+Canonical structure notes live in [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
 
 ## What's inside
 
-```
+```text
 kai_agent/          Python-side Kai brain (Ollama, memory, tools)
-bridge/             WebSocket event bridge (brain ↔ companion)
+bridge/             WebSocket event bridge (brain <-> companion)
 kai_companion/      Godot desktop avatar (3D Shiba, animations, chat)
 widget/             Web chat widget (browser-based companion interface)
 tools/              Launchers, rigging, texture workflows
@@ -17,10 +24,10 @@ memory/             Persistent notes and session history
 
 ## Identity
 
-- **Breed:** Shiba Inu
-- **Coat:** Black and tan
-- **Markings:** White/cream chest, muzzle, and paw accents
-- **Style:** Realistic 3D desktop companion with procedural animation
+- Breed: Shiba Inu
+- Coat: Black and tan
+- Markings: White/cream chest, muzzle, and paw accents
+- Style: Realistic 3D desktop companion with procedural animation
 
 ## Design system
 
@@ -34,7 +41,14 @@ All UI surfaces share a warm Shiba Inu palette:
 | `kai-chest` | `#F5E6D0` | Text / cream markings |
 | `kai-cream` | `#FFF5E1` | Bright text |
 
-Applied to: web widget, tkinter desktop panel, Godot companion UI.
+Applied to the web widget, desktop panel, and Godot companion UI.
+
+Preferred companion runtime files:
+
+- `kai_companion/project.godot`
+- `kai_companion/scenes/kai_3d.tscn` as the preferred default scene
+- `kai_companion/scripts/kai_3d.gd`
+- `kai_companion/scenes/kai.tscn` is the legacy scene
 
 ## Quick start
 
@@ -43,6 +57,19 @@ Applied to: web widget, tkinter desktop panel, Godot companion UI.
 ```bash
 pip install -r requirements.txt
 ```
+
+Runtime notes:
+
+- `bridge/server.py` hosts the websocket event bridge on `ws://127.0.0.1:8765`
+- `kai_agent/emit_event.py` sends `kai_thinking`, `kai_walk`, `kai_sleep`, or `kai_wag_tail`
+- `kai_agent/assistant.py` runs a local Kai CLI backed by Ollama
+- `memory/` stores lightweight persistent notes and session history for Kai
+
+Single-brain rule:
+
+- tool execution should flow through `KaiAssistant -> DesktopTools -> ToolPolicy`
+- the panel and companion should not become separate primary tool-execution engines
+- the companion prefers the local Kai chat server first and only falls back to direct Ollama chat when the unified server is unavailable
 
 ### 2. Start the bridge
 
@@ -65,14 +92,14 @@ powershell -ExecutionPolicy Bypass -File tools/launch_kai_panel.ps1
 
 ### 4. Chat
 
-Open http://127.0.0.1:8127 in a browser, or right-click Kai on the desktop.
+Open `http://127.0.0.1:8127` in a browser, or right-click Kai on the desktop.
 
 ## Companion controls
 
-- **Left click + drag** — move Kai around the desktop
-- **Right click** — open/close chat panel
-- **Chat** button — toggle conversation
-- Kai patrols the desktop on his own (walking, sniffing, barking, resting)
+- Left click + drag: move Kai around the desktop
+- Right click: open or close the chat panel
+- Chat button: toggle conversation
+- Kai patrols the desktop on his own
 
 ## Desktop panel
 
@@ -85,7 +112,7 @@ Always-on-top command center with four tabs:
 | Kali | Live terminal feed + command bar |
 | Tools | OCR, playbooks, logs, security toolkit |
 
-Controls: drag title bar to move, `Dock Left`/`Dock Right` to snap, opacity slider for HUD mode.
+Controls: drag title bar to move, `Dock Left` or `Dock Right` to snap, opacity slider for HUD mode.
 
 ## Chat commands
 
@@ -97,6 +124,9 @@ Controls: drag title bar to move, `Dock Left`/`Dock Right` to snap, opacity slid
 | `/run <cmd>` | Run a shell command |
 | `/read <file>` | Read a file |
 | `/ls <path>` | List files |
+| `/policy status` | Show capability policy mode |
+| `/policy mode <power-user\|balanced\|guarded>` | Change capability policy mode |
+| `/capabilities` | List Kai's explicit tool catalog |
 | `/autonomy on` | Enable guarded autonomy |
 | `/autonomy tick` | Run one autonomous step |
 | `/autonomy off` | Disable autonomy |
@@ -104,14 +134,16 @@ Controls: drag title bar to move, `Dock Left`/`Dock Right` to snap, opacity slid
 ## Recovery mode
 
 When a tool step fails, Kai builds a recovery summary:
+
 - Failure point
 - Likely cause
 - Smallest fix
 - Next command to try
 
 When the primary model fails, Kai auto-recovers:
+
 1. Fallback local models
-2. Live web research (if `TAVILY_API_KEY` is set)
+2. Live web research if `TAVILY_API_KEY` is set
 
 Set `KAI_FALLBACK_MODELS=qwen3:4b-q4_K_M,llama2:latest` to customize.
 
@@ -121,7 +153,7 @@ Set `KAI_FALLBACK_MODELS=qwen3:4b-q4_K_M,llama2:latest` to customize.
 
 | File | Role |
 |------|------|
-| `kai_textured.glb` | Canonical photo-replica (runtime identity) |
+| `kai_textured.glb` | Canonical photo-replica runtime identity |
 | `kai_textured_rigged.glb` | Provisional rigged candidate |
 | `kai-lite.glb` | Motion reference donor only |
 | `kai_mixamo_ready.fbx` | Staging file for Mixamo auto-rig |
@@ -132,21 +164,18 @@ Set `KAI_FALLBACK_MODELS=qwen3:4b-q4_K_M,llama2:latest` to customize.
 2. Auto-rig with marker placement
 3. Download rigged result as `kai_mixamo_rigged_source.fbx`
 4. Run rig prep:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File tools/prepare_kai_rig_runtime.ps1
-   ```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/prepare_kai_rig_runtime.ps1
+```
+
 5. Export validated `kai_textured_rigged.glb`
 
 ### Texturing workflow
 
 ```bash
-# Open Blender workspace
 blender kai_companion/assets/kai/kai_texture_workspace.blend
-
-# Export textured mesh
 blender -b --python tools/export_kai_runtime_glb.py
-
-# Preview render
 blender -b --python tools/render_kai_texture_preview.py
 ```
 
@@ -163,7 +192,10 @@ Structured interaction logs are written to `logs/events.jsonl`. The desktop pane
 
 ## Notes
 
-- Default model: `qwen3:4b-q4_K_M` (lighter on 8 GB RAM)
-- For heavier models, try: `python -m kai_agent.assistant --model <model>`
+- Default model: `qwen3:4b-q4_K_M` for lighter systems
+- For heavier models, try `python -m kai_agent.assistant --model <model>`
 - Set `TAVILY_API_KEY` for live web research
-- The companion only loads `kai_textured.glb` as runtime identity — do not substitute other assets silently
+- The companion only loads `kai_textured.glb` as runtime identity
+- `KAI_FALLBACK_MODELS` controls fallback model order, for example `qwen3:4b-q4_K_M,llama2:latest,mistral:latest`
+- `power-user` is permissive local operator mode, `balanced` blocks medium-risk actions for review, and `guarded` is read-mostly
+- During autonomous ticks, Kai only runs low-risk actions and persists autonomy state in `memory/autonomy.json`

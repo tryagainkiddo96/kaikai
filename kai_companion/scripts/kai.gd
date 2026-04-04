@@ -1,6 +1,7 @@
 extends Control
 
 const WS_URL := "ws://127.0.0.1:8765"
+const KAI_CHAT_URL := "http://127.0.0.1:8127/api/chat"
 const OLLAMA_URL := "http://127.0.0.1:11434/api/chat"
 const KAI_BARK_1_PATH := "res://assets/kai/audio/kai_bark_1.wav"
 const KAI_BARK_2_PATH := "res://assets/kai/audio/kai_bark_2.wav"
@@ -57,6 +58,8 @@ var _state := "idle"
 var _dragging := false
 var _drag_offset := Vector2.ZERO
 var _request_in_flight := false
+var _chat_request_backend := "kai_server"
+var _pending_chat_message := ""
 var _time := 0.0
 var _tail_phase := 0.0
 var _chat_history: Array[Dictionary] = []
@@ -763,38 +766,65 @@ func _send_chat_message() -> void:
     _state = "thinking"
     _set_status("thinking")
     _set_bubble_text("Thinking...")
+    _pending_chat_message = message
+    _request_chat_backend("kai_server")
 
-    var payload := {
-        "model": ollama_model,
-        "stream": false,
-        "messages": _chat_history
-    }
+
+func _request_chat_backend(backend: String) -> void:
+    _chat_request_backend = backend
+    var payload := {}
+    var target_url := KAI_CHAT_URL
+    if backend == "ollama":
+        payload = {
+            "model": ollama_model,
+            "stream": false,
+            "messages": _chat_history
+        }
+        target_url = OLLAMA_URL
+    else:
+        payload = {
+            "message": _pending_chat_message
+        }
     var headers := PackedStringArray(["Content-Type: application/json"])
-    var err := request.request(OLLAMA_URL, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+    var err := request.request(target_url, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
     if err != OK:
+        if backend == "kai_server":
+            _request_chat_backend("ollama")
+            return
         _finish_chat_with_reply(_offline_chat_reply())
 
 
 func _on_request_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
-    if result != HTTPRequest.RESULT_SUCCESS:
-        _finish_chat_with_reply(_offline_chat_reply())
-        return
-    if response_code != 200:
+    if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+        if _chat_request_backend == "kai_server":
+            _request_chat_backend("ollama")
+            return
         _finish_chat_with_reply(_offline_chat_reply())
         return
     var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
     if typeof(parsed) != TYPE_DICTIONARY:
+        if _chat_request_backend == "kai_server":
+            _request_chat_backend("ollama")
+            return
         _finish_chat_with_reply(_offline_chat_reply())
         return
-    var message: Dictionary = parsed.get("message", {})
-    var content := str(message.get("content", "")).strip_edges()
+    var content := ""
+    if _chat_request_backend == "kai_server":
+        content = str(parsed.get("reply", "")).strip_edges()
+    else:
+        var message: Dictionary = parsed.get("message", {})
+        content = str(message.get("content", "")).strip_edges()
     if content.is_empty():
+        if _chat_request_backend == "kai_server":
+            _request_chat_backend("ollama")
+            return
         content = _offline_chat_reply()
     _finish_chat_with_reply(content)
 
 
 func _finish_chat_with_reply(content: String) -> void:
     _request_in_flight = false
+    _pending_chat_message = ""
     send_button.disabled = false
     chat_input.editable = true
     _chat_history.append({"role": "assistant", "content": content})

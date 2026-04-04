@@ -24,7 +24,7 @@ $assistantModule = "kai_agent.assistant"
 $companionPath = Join-Path $root "kai_companion"
 $scenePath = $env:KAI_SCENE
 if ([string]::IsNullOrWhiteSpace($scenePath)) {
-    $scenePath = "res://scenes/kai.tscn"
+    $scenePath = "res://scenes/kai_3d.tscn"
 }
 $bridgeHost = "127.0.0.1"
 $bridgePort = 8765

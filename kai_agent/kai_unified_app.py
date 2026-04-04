@@ -393,7 +393,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Kai unified desktop app")
     parser.add_argument("--model", default="qwen3:4b-q4_K_M")
     parser.add_argument("--workspace", default=str(WORKSPACE_ROOT))
-    parser.add_argument("--scene", default=os.environ.get("KAI_SCENE", "res://scenes/kai.tscn"))
+    parser.add_argument("--scene", default=os.environ.get("KAI_SCENE", "res://scenes/kai_3d.tscn"))
     return parser.parse_args()
 
 

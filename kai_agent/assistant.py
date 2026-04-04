@@ -88,6 +88,7 @@ class KaiAssistant:
 
     def build_messages(self, user_input: str) -> list[dict]:
         memory_context = self.memory.build_memory_context()
+        tool_context = self.tools.build_tool_context()
         semantic_context = self.semantic_mem.build_context_for_prompt(user_input)
         emotion_color = self.emotions.get_response_color()
         mood_line = emotion_color["brief_mood"]
@@ -95,7 +96,7 @@ class KaiAssistant:
         pending_thought = self.inner_voice.get_pending_summary()
         relationship_context = self.relationship.get_relationship_context()
 
-        system_parts = [memory_context]
+        system_parts = [tool_context, memory_context]
         if semantic_context:
             system_parts.append(semantic_context)
         if relationship_context:
@@ -903,6 +904,20 @@ class KaiAssistant:
     def _maybe_run_tools(self, user_input: str) -> str:
         lowered = user_input.lower()
 
+        if re.search(r"^(?:policy status|show policy|capability policy)$", user_input.strip(), flags=re.IGNORECASE):
+            return "Policy status:\n" + self.tools.policy_status()
+
+        policy_mode_match = re.search(
+            r"^(?:policy mode|set policy mode|set mode)[: ]+(power-user|balanced|guarded)$",
+            user_input.strip(),
+            flags=re.IGNORECASE,
+        )
+        if policy_mode_match:
+            return "Policy update:\n" + self.tools.set_policy_mode(policy_mode_match.group(1).strip())
+
+        if re.search(r"^(?:show capabilities|list capabilities|what can you do|capabilities)$", user_input.strip(), flags=re.IGNORECASE):
+            return "Capabilities:\n" + self.tools.list_capabilities()
+
         # Task planner commands
         do_task_match = re.search(r"^(?:do task|execute task|complete task|run task)[: ]+([\s\S]+)$", user_input.strip(), flags=re.IGNORECASE)
         if do_task_match:
@@ -1575,6 +1590,7 @@ async def repl(model: str, workspace: Path) -> None:
 
     kai_echo(f"[KAI] ready with model: {model}")
     kai_echo("[KAI] Commands: /exit, /remember <text>, /memory, /screen, /run <powershell>, /read <file>, /ls <path>, /autonomy <on|off|status|tick>")
+    kai_echo("[KAI] Policy: /policy status, /policy mode <power-user|balanced|guarded>, /capabilities")
     kai_echo("[KAI] Task planning: plan: <task>, run plan, do task: <task>, plan status")
     kai_echo("[KAI] Browser: browse <url>, show links, click link <text>, download file <url>, fill form: key=val")
     kai_echo("[KAI] Documents: show documents, find document <name>, read document <path>, organize downloads")
@@ -1836,6 +1852,18 @@ async def repl(model: str, workspace: Path) -> None:
                 shell_echo(assistant.autonomy.tick())
                 continue
             kai_echo("[KAI] Use /autonomy on, /autonomy off, /autonomy status, or /autonomy tick")
+            continue
+        if user_input == "/policy status":
+            kai_echo("[KAI] policy status")
+            shell_echo(assistant.tools.policy_status())
+            continue
+        if user_input.startswith("/policy mode "):
+            kai_echo("[KAI] policy mode update")
+            shell_echo(assistant.tools.set_policy_mode(user_input[len("/policy mode ") :].strip()))
+            continue
+        if user_input == "/capabilities":
+            kai_echo("[KAI] capabilities")
+            shell_echo(assistant.tools.list_capabilities())
             continue
 
         try:

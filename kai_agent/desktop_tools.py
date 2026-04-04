@@ -14,6 +14,7 @@ from pathlib import Path
 from kai_agent.browser_tools import BrowserTools
 from kai_agent.document_handler import DocumentHandler
 from kai_agent.tavily_client import TavilyClient
+from kai_agent.tool_policy import ToolPolicy
 
 
 TESSERACT_PATH = Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe")
@@ -32,6 +33,35 @@ class DesktopTools:
         self.tavily = TavilyClient()
         self.browser = BrowserTools(workspace)
         self.documents = DocumentHandler(workspace)
+        self.policy = ToolPolicy(workspace)
+
+    def _policy_block(self, action: str, **payload) -> str:
+        decision = self.policy.evaluate(action, payload)
+        self.policy.record(action, payload, decision)
+        if decision.get("allowed", False):
+            return ""
+        return json.dumps(
+            {
+                "action": action,
+                "ok": False,
+                "blocked": True,
+                **decision,
+                **{key: str(value) if isinstance(value, Path) else value for key, value in payload.items()},
+            },
+            indent=2,
+        )
+
+    def policy_status(self) -> str:
+        return json.dumps(self.policy.status(), indent=2)
+
+    def set_policy_mode(self, mode: str) -> str:
+        return json.dumps(self.policy.set_mode(mode), indent=2)
+
+    def list_capabilities(self) -> str:
+        return json.dumps(self.policy.capabilities(), indent=2)
+
+    def build_tool_context(self) -> str:
+        return self.policy.build_context()
 
     def classify_command(self, command: str, shell: str = "powershell") -> dict:
         lowered = command.strip().lower()
@@ -118,6 +148,9 @@ class DesktopTools:
 
     def run_shell(self, command: str, timeout: int = 30) -> str:
         meta = self.classify_command(command, shell="powershell")
+        blocked = self._policy_block("run_shell", timeout=timeout, **meta)
+        if blocked:
+            return blocked
         try:
             completed = subprocess.run(
                 ["powershell", "-NoProfile", "-Command", command],
@@ -154,10 +187,14 @@ class DesktopTools:
                 "stderr": f"Command failed: {exc}",
                 **meta,
             }
+        self.policy.record("run_shell", payload, {"allowed": bool(payload.get("returncode", -1) != -999), "policy_mode": self.policy.status()["mode"], "policy_reason": "Executed through policy-approved shell path."})
         return json.dumps(payload, indent=2)
 
     def run_wsl(self, command: str, timeout: int = 60, distro: str = "kali-linux") -> str:
         meta = self.classify_command(command, shell="bash")
+        blocked = self._policy_block("run_wsl", timeout=timeout, distro=distro, **meta)
+        if blocked:
+            return blocked
         try:
             completed = subprocess.run(
                 ["wsl.exe", "-d", distro, "--", "bash", "-lc", command],
@@ -195,6 +232,7 @@ class DesktopTools:
                 "stderr": f"WSL command failed: {exc}",
                 **meta,
             }
+        self.policy.record("run_wsl", payload, {"allowed": True, "policy_mode": self.policy.status()["mode"], "policy_reason": "Executed through policy-approved WSL path."})
         return json.dumps(payload, indent=2)
 
     def _kali_reader(self) -> None:
@@ -487,6 +525,9 @@ class DesktopTools:
 
     def open_path(self, path: str) -> str:
         target = self._resolve_path(path)
+        blocked = self._policy_block("open_path", path=target)
+        if blocked:
+            return blocked
         if not target.exists():
             return json.dumps({"action": "open_path", "ok": False, "error": f"Path not found: {target}"}, indent=2)
         try:
@@ -497,6 +538,9 @@ class DesktopTools:
 
     def write_file(self, path: str, content: str) -> str:
         target = self._resolve_path(path)
+        blocked = self._policy_block("write_file", path=target, chars_written=len(content))
+        if blocked:
+            return blocked
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
@@ -514,6 +558,9 @@ class DesktopTools:
 
     def append_file(self, path: str, content: str) -> str:
         target = self._resolve_path(path)
+        blocked = self._policy_block("append_file", path=target, chars_appended=len(content))
+        if blocked:
+            return blocked
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
             with target.open("a", encoding="utf-8") as handle:
@@ -532,6 +579,9 @@ class DesktopTools:
 
     def replace_in_file(self, path: str, old_text: str, new_text: str) -> str:
         target = self._resolve_path(path)
+        blocked = self._policy_block("replace_in_file", path=target, replaced_chars=len(old_text), new_chars=len(new_text))
+        if blocked:
+            return blocked
         if not target.exists():
             return json.dumps({"action": "replace_in_file", "ok": False, "path": str(target), "error": "File not found."}, indent=2)
         try:
@@ -566,6 +616,9 @@ class DesktopTools:
         if not archive.exists():
             return json.dumps({"action": "extract_zip", "ok": False, "error": f"Archive not found: {archive}"}, indent=2)
         target_dir = self._resolve_path(destination) if destination else archive.with_suffix("")
+        blocked = self._policy_block("extract_zip", archive=archive, destination=target_dir)
+        if blocked:
+            return blocked
         target_dir.mkdir(parents=True, exist_ok=True)
         result = self._run_native(
             ["powershell", "-NoProfile", "-Command", f"Expand-Archive -LiteralPath '{archive}' -DestinationPath '{target_dir}' -Force"],
@@ -576,11 +629,13 @@ class DesktopTools:
         return json.dumps(payload, indent=2)
 
     def clone_repo(self, repo_url: str, destination: str | None = None) -> str:
+        target = self._resolve_path(destination) if destination else (self.workspace / (Path(repo_url.rstrip("/")).stem or "repo"))
+        blocked = self._policy_block("clone_repo", repo_url=repo_url, destination=target)
+        if blocked:
+            return blocked
         ok, ensure_msg = self._ensure_command("git")
         if not ok:
             return json.dumps({"action": "clone_repo", "ok": False, "error": ensure_msg}, indent=2)
-        repo_name = Path(repo_url.rstrip("/")).stem or "repo"
-        target = self._resolve_path(destination) if destination else (self.workspace / repo_name)
         result = self._run_native(["git", "clone", repo_url, str(target)], timeout=1200)
         payload = {"action": "clone_repo", "repo_url": repo_url, "destination": str(target), "setup": ensure_msg, **result}
         payload["ok"] = result["returncode"] == 0
@@ -588,6 +643,9 @@ class DesktopTools:
 
     def install_project(self, target_path: str) -> str:
         target = self._resolve_path(target_path)
+        blocked = self._policy_block("install_project", path=target)
+        if blocked:
+            return blocked
         if not target.exists():
             return json.dumps({"action": "install_project", "ok": False, "error": f"Project path not found: {target}"}, indent=2)
 
@@ -624,6 +682,9 @@ class DesktopTools:
 
     def run_project(self, target_path: str) -> str:
         target = self._resolve_path(target_path)
+        blocked = self._policy_block("run_project", path=target)
+        if blocked:
+            return blocked
         if not target.exists():
             return json.dumps({"action": "run_project", "ok": False, "error": f"Project path not found: {target}"}, indent=2)
 
@@ -685,6 +746,9 @@ class DesktopTools:
 
     def run_tests(self, target_path: str) -> str:
         target = self._resolve_path(target_path)
+        blocked = self._policy_block("run_tests", path=target)
+        if blocked:
+            return blocked
         if not target.exists():
             return json.dumps({"action": "run_tests", "ok": False, "error": f"Project path not found: {target}"}, indent=2)
 
@@ -736,6 +800,9 @@ class DesktopTools:
 
     def codex_edit(self, instruction: str, target_path: str | None = None) -> str:
         target = self._resolve_path(target_path) if target_path else self.workspace
+        blocked = self._policy_block("codex_edit", target=target, instruction=instruction[:240])
+        if blocked:
+            return blocked
         if not target.exists():
             return json.dumps({"action": "codex_edit", "ok": False, "error": f"Target path not found: {target}"}, indent=2)
 
@@ -772,6 +839,10 @@ class DesktopTools:
         return json.dumps(payload, indent=2)
 
     def codex_edit_and_test(self, instruction: str, target_path: str | None = None) -> str:
+        target = self._resolve_path(target_path) if target_path else self.workspace
+        blocked = self._policy_block("codex_edit_and_test", target=target, instruction=instruction[:240])
+        if blocked:
+            return blocked
         edit_data = json.loads(self.codex_edit(instruction=instruction, target_path=target_path))
         target = target_path or str(self.workspace)
         if not edit_data.get("ok"):
@@ -819,10 +890,16 @@ class DesktopTools:
     # Browser automation methods
     def browse(self, url: str) -> str:
         """Navigate to a URL."""
+        blocked = self._policy_block("browse", url=url)
+        if blocked:
+            return blocked
         return self.browser.browse(url)
 
     def search_browser(self, query: str, site: str = "") -> str:
         """Search the web using browser automation."""
+        blocked = self._policy_block("search_browser", query=query, site=site)
+        if blocked:
+            return blocked
         return self.browser.search_web_browser(query, site)
 
     def get_page_content(self) -> str:
@@ -835,10 +912,16 @@ class DesktopTools:
 
     def click_link(self, text: str) -> str:
         """Click a link by text."""
+        blocked = self._policy_block("click_link", text=text)
+        if blocked:
+            return blocked
         return self.browser.click_link(text)
 
     def fill_form(self, data: dict, form_index: int = 0) -> str:
         """Fill a form on the current page."""
+        blocked = self._policy_block("fill_form", form_index=form_index, field_count=len(data))
+        if blocked:
+            return blocked
         return self.browser.fill_form(data, form_index)
 
     def find_forms(self) -> str:
@@ -847,6 +930,9 @@ class DesktopTools:
 
     def download_file(self, url: str = None, filename: str = None) -> str:
         """Download a file."""
+        blocked = self._policy_block("download_file", url=url or "", filename=filename or "")
+        if blocked:
+            return blocked
         return self.browser.download(url, filename)
 
     def screenshot(self, filename: str = "kai_screenshot.png") -> str:
